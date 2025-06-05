@@ -11,12 +11,12 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Konfigurasi halaman Streamlit dengan responsive settings
+# Konfigurasi halaman Streamlit
 st.set_page_config(
     page_title="🚕 Sigma Cabs - Taxi Pricing Analysis",
     page_icon="🚕",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Collapsed untuk mobile
+    initial_sidebar_state="collapsed"
 )
 
 # CSS untuk styling responsive dan dark mode support
@@ -42,14 +42,12 @@ st.markdown("""
             padding: 0.8rem !important;
             margin: 0.3rem 0 !important;
         }
-        /* Mobile columns stack vertically */
         .stColumns > div {
             min-width: 100% !important;
             margin-bottom: 1rem !important;
         }
     }
     
-    /* Portrait mode optimizations */
     @media (orientation: portrait) {
         .main-header {
             font-size: 2rem;
@@ -60,7 +58,6 @@ st.markdown("""
         }
     }
     
-    /* Dark mode support */
     @media (prefers-color-scheme: dark) {
         .main-header {
             color: #FF6B6B !important;
@@ -97,7 +94,6 @@ st.markdown("""
         }
     }
     
-    /* General responsive improvements */
     .main-header {
         font-size: 2.5rem;
         color: #FF6B6B;
@@ -167,28 +163,23 @@ st.markdown("""
         word-wrap: break-word;
     }
     
-    /* Responsive images */
     .stImage > img {
         max-width: 100%;
         height: auto;
     }
     
-    /* Responsive tables and dataframes */
     .stDataFrame {
         overflow-x: auto;
     }
     
-    /* Responsive plotly charts */
     .js-plotly-plot {
         width: 100% !important;
     }
     
-    /* Responsive input widgets */
     .stNumberInput, .stSelectbox, .stSlider {
         width: 100%;
     }
     
-    /* Hide sidebar on mobile by default */
     @media (max-width: 768px) {
         .css-1d391kg {
             width: 0px;
@@ -200,13 +191,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Fungsi untuk mendeteksi device type
-def get_device_type():
-    """Detect device type based on screen width"""
-    # This is a simplified detection, in real app you might use JavaScript
-    return "mobile"  # Default assumption for responsive design
-
-# Fungsi untuk menampilkan gambar header dengan responsive design
+# Fungsi untuk menampilkan gambar header
 def display_header_image():
     """Display Sigma Cabs image with responsive design"""
     image_path = 'Picture/Sigma-cabs-in-hyderabad-and-bangalore.jpg'
@@ -223,13 +208,11 @@ def display_header_image():
         </div>
         """, unsafe_allow_html=True)
 
-# Tampilkan gambar header
 display_header_image()
 
-# Judul aplikasi dengan responsive font
 st.markdown('<h1 class="main-header">Taxi Pricing Analysis</h1>', unsafe_allow_html=True)
 
-# Deskripsi Sigma Cabs dengan responsive design
+# Deskripsi Sigma Cabs
 col1, col2 = st.columns([2, 1])
 
 with col1:
@@ -247,7 +230,7 @@ with col2:
     <div class="contact-info">
         <h4>📞 Contact Info</h4>
         <p><strong>Toll-Free:</strong><br>📞 1800-420-9999</p>
-        <p><strong>24/7:</strong><br>📱 040-63 63 63 63</p>
+        <p><strong>24/7:</strong><br>📞 040-63 63 63 63</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -307,10 +290,10 @@ def create_valid_model():
     
     return model, scaler, feature_names, final_results
 
-# Fungsi untuk load model dengan validasi yang ketat
+# Fungsi untuk load model dengan validasi
 @st.cache_resource
 def load_model() -> Tuple[Any, StandardScaler, List[str], Dict]:
-    """Load model dengan validasi yang ketat untuk mencegah prediction error"""
+    """Load model dengan validasi yang ketat"""
     try:
         model = joblib.load('model.pkl')
         scaler = joblib.load('scaler.pkl')
@@ -379,7 +362,7 @@ def preprocess_input_data_robust(input_dict, feature_names):
         final_features = []
         for feature in feature_names:
             if feature in df.columns:
-                value = float(df[feature].iloc[0])
+                value = float(df[feature].iloc[0])  # Fix: tambahkan [0]
                 if np.isnan(value) or np.isinf(value):
                     value = 0.0
                 final_features.append(value)
@@ -388,7 +371,7 @@ def preprocess_input_data_robust(input_dict, feature_names):
         
         result = np.array(final_features, dtype=np.float64).reshape(1, -1)
         
-        if result.shape[1] != len(feature_names):
+        if result.shape[1] != len(feature_names):  # Fix: gunakan shape[1]
             raise ValueError(f"Feature count mismatch: {result.shape[1]} vs {len(feature_names)}")
         
         return result
@@ -400,11 +383,10 @@ def preprocess_input_data_robust(input_dict, feature_names):
 df = load_data()
 model, scaler, feature_names, final_results = load_model()
 
-# Preview dataset dalam expander untuk mobile-friendly
+# Preview dataset
 if df is not None:
     with st.expander("📊 Dataset Preview"):
-        # Responsive layout untuk dataset
-        if len(df.columns) > 5:  # Jika banyak kolom, gunakan scrollable
+        if len(df.columns) > 5:
             st.dataframe(df.head(5), use_container_width=True)
         else:
             col1, col2 = st.columns([3, 1])
@@ -414,11 +396,10 @@ if df is not None:
                 st.write(f"**Records:** {len(df):,}")
                 st.write(f"**Features:** {len(df.columns)}")
 
-# Display model information dengan responsive layout
+# Display model information
 if final_results and feature_names:
     st.markdown("### 🤖 Model Information")
     
-    # Responsive columns untuk mobile
     info_col1, info_col2 = st.columns([1, 1])
     
     with info_col1:
@@ -441,27 +422,23 @@ if final_results and feature_names:
         </div>
         """, unsafe_allow_html=True)
 
-# Input fields dengan responsive design dan label yang lebih jelas
+# Input fields
 st.markdown("## 🎯 Fare Prediction")
 
-# Responsive input layout - stack on mobile
 input_container = st.container()
 
 with input_container:
-    # Untuk mobile, gunakan single column layout
     st.markdown("### 🚗 Trip Details")
     trip_col1, trip_col2 = st.columns(2)
     
     with trip_col1:
         trip_distance = st.number_input("Distance (km):", min_value=0.1, max_value=100.0, value=5.0, step=0.1)
         
-        # Cab type dengan label yang lebih jelas
         cab_type_display = st.selectbox(
             "Vehicle Type:", 
             ['Economy (Micro)', 'Standard (Mini)', 'Premium (Prime)'],
             help="Choose your preferred vehicle category"
         )
-        # Convert back to original format for processing
         cab_type_mapping = {'Economy (Micro)': 'A', 'Standard (Mini)': 'B', 'Premium (Prime)': 'C'}
         cab_type = cab_type_mapping[cab_type_display]
     
@@ -480,17 +457,15 @@ with input_container:
     with cust_col2:
         cancellation_last_month = st.number_input("Cancellations Last Month:", min_value=0, max_value=10, value=0)
         
-        # Confidence dengan label yang lebih jelas
         confidence_display = st.selectbox(
             "Service Confidence Level:", 
             ['High Confidence', 'Medium Confidence', 'Low Confidence'],
             help="Your confidence level in using taxi services"
         )
-        # Convert back to original format for processing
         confidence_mapping_reverse = {'High Confidence': 'A', 'Medium Confidence': 'B', 'Low Confidence': 'C'}
         confidence_life_style = confidence_mapping_reverse[confidence_display]
 
-    # Advanced parameters dengan label yang lebih mudah dipahami
+    # Advanced parameters
     with st.expander("🔧 Advanced Pricing Factors"):
         st.markdown("**These factors help determine more accurate pricing based on market conditions:**")
         
@@ -519,27 +494,27 @@ with input_container:
         
         gender = st.selectbox("Gender:", ["Male", "Female"])
 
-# Predict button dengan full width
+# Predict button
 if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=True):
     try:
         # Validasi model
         if not hasattr(model, 'predict') or not hasattr(scaler, 'transform'):
             raise ValueError("Invalid model")
         
-        # Prepare input data dengan nama yang sudah diperbaiki
+        # Prepare input data
         input_data = {
             'Trip_Distance': float(trip_distance),
             'Customer_Rating': float(customer_rating),
             'Customer_Since_Months': int(customer_since_months),
             'Life_Style_Index': float(life_style_index),
-            'Type_of_Cab': str(cab_type_display),  # Gunakan display value
-            'Confidence_Life_Style_Index': str(confidence_display),  # Gunakan display value
+            'Type_of_Cab': str(cab_type_display),
+            'Confidence_Life_Style_Index': str(confidence_display),
             'Destination_Type': str(destination_type),
             'Gender': str(gender),
             'Cancellation_Last_1Month': int(cancellation_last_month),
-            'Var1': float(traffic_density),  # Traffic density
-            'Var2': float(demand_level),     # Demand level
-            'Var3': float(weather_condition) # Weather condition
+            'Var1': float(traffic_density),
+            'Var2': float(demand_level),
+            'Var3': float(weather_condition)
         }
         
         # Preprocess dan predict
@@ -566,7 +541,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
         
         prediction = max(1.0, min(3.0, prediction))
         
-        # Display hasil dengan responsive design
+        # Display hasil
         st.markdown(f"""
         <div class="prediction-box">
             <h2>🎯 Predicted Surge Pricing</h2>
@@ -575,7 +550,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
         </div>
         """, unsafe_allow_html=True)
         
-        # Results dalam responsive layout
+        # Results
         st.markdown("### 📊 Analysis Results")
         
         result_col1, result_col2, result_col3 = st.columns(3)
@@ -584,7 +559,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             surge_category = "High" if prediction > 2.5 else "Medium" if prediction > 1.5 else "Low"
             st.markdown(f"""
             <div class="metric-card">
-                <h4>📊 Surge Analysis</h4>
+                <h4>📊 Surge</h4>
                 <p><strong>Category:</strong> {surge_category}</p>
                 <p><strong>Multiplier:</strong> {prediction:.2f}x</p>
                 <p><strong>Distance:</strong> {trip_distance} km</p>
@@ -596,7 +571,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             loyalty_segment = "VIP" if customer_since_months > 24 else "Loyal" if customer_since_months > 12 else "Regular"
             st.markdown(f"""
             <div class="metric-card">
-                <h4>👤 Customer Profile</h4>
+                <h4>👤 Customer</h4>
                 <p><strong>Loyalty:</strong> {loyalty_segment}</p>
                 <p><strong>Rating:</strong> {customer_rating}/5.0 ⭐</p>
                 <p><strong>Since:</strong> {customer_since_months} months</p>
@@ -608,7 +583,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             estimated_fare = trip_distance * prediction * 2.5 + 10
             st.markdown(f"""
             <div class="metric-card">
-                <h4>💰 Estimated Fare</h4>
+                <h4>💰 Fare</h4>
                 <p><strong>Base Fare:</strong> $10.00</p>
                 <p><strong>Distance Cost:</strong> ${trip_distance * 2.5:.2f}</p>
                 <p><strong>Surge Applied:</strong> {prediction:.2f}x</p>
@@ -616,7 +591,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             </div>
             """, unsafe_allow_html=True)
         
-        # Tampilkan faktor-faktor yang mempengaruhi
+        # Pricing factors impact
         st.markdown("### 🔍 Pricing Factors Impact")
         
         factor_col1, factor_col2 = st.columns(2)
@@ -632,13 +607,12 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             """, unsafe_allow_html=True)
         
         with factor_col2:
-            # Hitung impact score
             condition_score = (traffic_density + demand_level + weather_condition) / 3
             impact_level = "High Impact" if condition_score > 70 else "Medium Impact" if condition_score > 40 else "Low Impact"
             
             st.markdown(f"""
             <div class="info-box">
-                <h4>📈 Impact Analysis</h4>
+                <h4>📊 Impact Analysis</h4>
                 <p><strong>Overall Condition:</strong> {condition_score:.0f}/100</p>
                 <p><strong>Impact Level:</strong> {impact_level}</p>
                 <p><strong>Recommendation:</strong> {"Consider alternative time" if condition_score > 70 else "Good time to travel"}</p>
@@ -646,7 +620,6 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             """, unsafe_allow_html=True)
         
     except Exception as e:
-        # Error handling dengan responsive design
         st.markdown(f"""
         <div class="error-box">
             <h4>❌ Prediction Error</h4>
@@ -683,7 +656,7 @@ if st.button('🔮 Predict Surge Pricing', type="primary", use_container_width=T
             </div>
             """, unsafe_allow_html=True)
 
-# Additional Information dengan responsive layout
+# Additional Information
 st.markdown("---")
 st.markdown("## 💡 Understanding the Factors")
 
@@ -722,13 +695,13 @@ with info_col2:
     </div>
     """, unsafe_allow_html=True)
 
-# Footer dengan responsive design
+# Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style="text-align: center; padding: 1.5rem; background: var(--background-color, #f8f9fa); 
            border-radius: 10px; margin-top: 1rem; word-wrap: break-word;">
     <h3 style="margin: 0; font-size: clamp(1.2rem, 4vw, 1.8rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO MODEL</h3>
     <p style="margin: 0.5rem 0; font-size: clamp(0.9rem, 3vw, 1rem);">Safe • Reliable • Affordable • 24/7 Available</p>
-    <p style="margin: 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem);"><strong>Model Accuracy: {:.2f}% | Gradient Boosting Algorithm</strong></p>
+    <p style="margin: 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem);"><strong>Model Accuracy: {final_results['r2']*100 if final_results else 94.55:.2f}% | Gradient Boosting Algorithm</strong></p>
 </div>
-""".format(final_results['r2']*100 if final_results else 94.55), unsafe_allow_html=True)
+""", unsafe_allow_html=True)

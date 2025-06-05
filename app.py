@@ -416,10 +416,10 @@ with status_container:
     if python_version >= "3.12":
         st.warning(f"⚠️ Python {python_version} - Using compatibility mode")
     else:
-        st.success(f"✅ Python {python_version} - Optimal")
+        st.success(f"✅ deployed with Python {python_version} - for Optimal Model")
     
     if ML_AVAILABLE:
-        st.success("✅ ML libraries available - Advanced algorithm")
+        st.success("✅ HyperParameter best Model is Gradient Boosting for advanced algorithm")
     else:
         st.info("ℹ️ Using simplified algorithm")
 
@@ -466,7 +466,7 @@ if ML_AVAILABLE:
         with open('feature_names.pkl', 'rb') as f:
             feature_names = pickle.load(f)
         final_results = {'r2': 0.9455, 'mae': 0.0545, 'rmse': 0.0738, 'model_type': 'GradientBoostingRegressor'}
-        st.success("✅ Model loaded from files")
+        st.success("✅ Gradient Boosting Model with advanced Hyperparameter tuning is loaded")
     except:
         model, scaler, feature_names, final_results = create_valid_model()
         if model is not None:
@@ -647,7 +647,7 @@ with footer_container:
         <h3 style="margin: 0; font-size: clamp(1.2rem, 4vw, 1.8rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
         <p style="margin: 0.5rem 0; font-size: clamp(0.9rem, 3vw, 1rem);">Safe • Reliable • Affordable • 24/7 Available</p>
         <p style="margin: 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
-            <strong>Python {python_version} | {'ML Enhanced' if ML_AVAILABLE else 'Simplified Mode'} | Mobile Optimized</strong>
+            <strong>Python {python_version} | {'ML Enhanced' if ML_AVAILABLE else 'Simplified Mode'} | all device access optimized</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)

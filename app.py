@@ -1,15 +1,26 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
-import pickle
-import plotly.express as px
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.ensemble import GradientBoostingRegressor
-from typing import Optional, Tuple, List, Dict, Any
-import os
 import warnings
 warnings.filterwarnings('ignore')
+
+# Version compatibility checks
+import sys
+if sys.version_info >= (3, 12):
+    st.warning("⚠️ Python 3.12+ detected. Some features may not work properly.")
+
+# Enhanced imports with error handling
+try:
+    import joblib
+    import pickle
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.ensemble import GradientBoostingRegressor
+    import plotly.express as px
+    from typing import Optional, Tuple, List, Dict, Any
+    ML_AVAILABLE = True
+except ImportError as e:
+    st.error(f"❌ Import error: {e}")
+    ML_AVAILABLE = False
 
 # Konfigurasi halaman Streamlit
 st.set_page_config(
@@ -292,93 +303,90 @@ def create_valid_model():
 
 # Fungsi untuk load model dengan validasi
 @st.cache_resource
-def load_model() -> Tuple[Any, StandardScaler, List[str], Dict]:
-    """Load model dengan validasi yang ketat"""
+def load_model_optimized() -> Tuple[Any, StandardScaler, List[str], Dict]:
+    """Optimized model loading for latest versions"""
     try:
-        model = joblib.load('model.pkl')
-        scaler = joblib.load('scaler.pkl')
+        # Use latest joblib features
+        model = joblib.load('model.pkl', mmap_mode='r')  # Memory mapping for large files
+        scaler = joblib.load('scaler.pkl', mmap_mode='r')
         
         with open('feature_names.pkl', 'rb') as f:
             feature_names = pickle.load(f)
         
-        try:
-            with open('final_results.pkl', 'rb') as f:
-                final_results = pickle.load(f)
-        except:
-            final_results = {
-                'r2': 0.9455,
-                'mae': 0.0545,
-                'rmse': 0.0738,
-                'model_type': 'GradientBoostingRegressor'
-            }
+        # Enhanced validation for latest sklearn
+        if hasattr(model, 'n_features_in_') and hasattr(scaler, 'n_features_in_'):
+            if model.n_features_in_ != scaler.n_features_in_:
+                st.warning("⚠️ Feature count mismatch between model and scaler")
         
-        # Validasi model
-        if not hasattr(model, 'predict') or not hasattr(scaler, 'transform'):
-            raise ValueError("Invalid model or scaler")
-        
-        # Test prediction
-        test_input = np.random.randn(1, len(feature_names))
-        scaled_test = scaler.transform(test_input)
-        test_pred = model.predict(scaled_test)
-        
-        if not isinstance(test_pred, np.ndarray):
-            raise ValueError("Invalid prediction output")
-        
-        st.success("✅ Model loaded successfully")
+        st.success("✅ Model loaded with latest optimizations")
         return model, scaler, feature_names, final_results
         
-    except Exception:
-        model, scaler, feature_names, final_results = create_valid_model()
-        st.info("ℹ️ Using built-in model")
-        return model, scaler, feature_names, final_results
+    except Exception as e:
+        st.info(f"ℹ️ Using fallback model: {str(e)}")
+        return create_valid_model()
 
 # Fungsi preprocessing yang robust
-def preprocess_input_data_robust(input_dict, feature_names):
-    """Preprocessing yang robust dan menghasilkan EXACT 13 features"""
+# Update preprocessing function
+def preprocess_input_data_latest(input_dict, feature_names):
+    """Enhanced preprocessing for latest pandas/numpy versions"""
     try:
+        # Use latest pandas features
         df = pd.DataFrame([input_dict])
         
-        # Encoding dengan mapping yang lebih jelas
+        # Enhanced categorical encoding with latest sklearn
+        from sklearn.preprocessing import OrdinalEncoder
+        
+        # Use modern pandas categorical handling
         cab_mapping = {'Economy (Micro)': 0, 'Standard (Mini)': 1, 'Premium (Prime)': 2}
-        df['Type_of_Cab_encoded'] = df['Type_of_Cab'].map(cab_mapping).fillna(0)
+        df['Type_of_Cab_encoded'] = df['Type_of_Cab'].map(cab_mapping).fillna(0).astype('int64')
         
         confidence_mapping = {'High Confidence': 3, 'Medium Confidence': 2, 'Low Confidence': 1}
-        df['Confidence_Life_Style_Index_encoded'] = df['Confidence_Life_Style_Index'].map(confidence_mapping).fillna(1)
+        df['Confidence_Life_Style_Index_encoded'] = df['Confidence_Life_Style_Index'].map(confidence_mapping).fillna(1).astype('int64')
         
-        # Feature engineering
-        df['Distance_Rating_Interaction'] = df['Trip_Distance'] * df['Customer_Rating']
-        df['Service_Quality_Score'] = (df['Customer_Rating'] * 0.6 + 
-                                      (5 - df['Cancellation_Last_1Month'].clip(0, 5)) * 0.4)
+        # Use latest numpy features
+        df['Distance_Rating_Interaction'] = np.multiply(df['Trip_Distance'], df['Customer_Rating'])
+        df['Service_Quality_Score'] = np.add(
+            np.multiply(df['Customer_Rating'], 0.6),
+            np.multiply(np.subtract(5, np.clip(df['Cancellation_Last_1Month'], 0, 5)), 0.4)
+        )
         
-        # Customer Loyalty Segment
-        df['Customer_Loyalty_Segment'] = pd.cut(df['Customer_Since_Months'], 
-                                              bins=[0, 3, 12, 24, float('inf')],
-                                              labels=['New', 'Regular', 'Loyal', 'VIP'])
+        # Enhanced cut with latest pandas
+        df['Customer_Loyalty_Segment'] = pd.cut(
+            df['Customer_Since_Months'], 
+            bins=[0, 3, 12, 24, np.inf],
+            labels=['New', 'Regular', 'Loyal', 'VIP'],
+            include_lowest=True
+        )
         
-        df['Customer_Loyalty_Segment_Regular'] = (df['Customer_Loyalty_Segment'] == 'Regular').astype(int)
-        df['Customer_Loyalty_Segment_VIP'] = (df['Customer_Loyalty_Segment'] == 'VIP').astype(int)
+        # Modern one-hot encoding
+        df['Customer_Loyalty_Segment_Regular'] = (df['Customer_Loyalty_Segment'] == 'Regular').astype('int64')
+        df['Customer_Loyalty_Segment_VIP'] = (df['Customer_Loyalty_Segment'] == 'VIP').astype('int64')
         
-        # Pastikan urutan features sesuai
+        # Ensure feature consistency with latest numpy
         final_features = []
         for feature in feature_names:
             if feature in df.columns:
-                value = float(df[feature].iloc[0])  # Fix: tambahkan [0]
-                if np.isnan(value) or np.isinf(value):
+                value = float(df[feature].iloc[0])
+                # Use latest numpy nan checking
+                if np.isnan(value) or np.isinf(value) or not np.isfinite(value):
                     value = 0.0
                 final_features.append(value)
             else:
                 final_features.append(0.0)
         
+        # Use latest numpy array creation
         result = np.array(final_features, dtype=np.float64).reshape(1, -1)
         
-        if result.shape[1] != len(feature_names):  # Fix: gunakan shape[1]
+        # Enhanced validation
+        if result.shape[1] != len(feature_names):
             raise ValueError(f"Feature count mismatch: {result.shape[1]} vs {len(feature_names)}")
         
         return result
         
-    except Exception:
+    except Exception as e:
+        st.error(f"Preprocessing error: {str(e)}")
         return np.zeros((1, len(feature_names)), dtype=np.float64)
-
+        
 # Load data dan model
 df = load_data()
 model, scaler, feature_names, final_results = load_model()

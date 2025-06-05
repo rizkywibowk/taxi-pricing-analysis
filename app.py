@@ -410,19 +410,6 @@ display_header()
 # Title
 st.markdown('<h1 class="main-header">Taxi Pricing Analysis</h1>', unsafe_allow_html=True)
 
-# System status dengan responsive layout
-status_container = st.container()
-with status_container:
-    if python_version >= "3.12":
-        st.warning(f"⚠️ Python {python_version} - Using compatibility mode")
-    else:
-        st.success(f"✅ deployed with Python {python_version} - for Optimal Model")
-    
-    if ML_AVAILABLE:
-        st.success("✅ HyperParameter best Model is Gradient Boosting for advanced algorithm")
-    else:
-        st.info("ℹ️ Using simplified algorithm")
-
 # About section dengan responsive columns
 about_container = st.container()
 with about_container:
@@ -466,11 +453,8 @@ if ML_AVAILABLE:
         with open('feature_names.pkl', 'rb') as f:
             feature_names = pickle.load(f)
         final_results = {'r2': 0.9455, 'mae': 0.0545, 'rmse': 0.0738, 'model_type': 'GradientBoostingRegressor'}
-        st.success("✅ Gradient Boosting Model with advanced Hyperparameter tuning is loaded")
     except:
         model, scaler, feature_names, final_results = create_valid_model()
-        if model is not None:
-            st.info("ℹ️ Using built-in model")
 else:
     model, scaler, feature_names, final_results = None, None, None, None
 
@@ -635,6 +619,26 @@ with info_container:
             </ul>
         </div>
         """, unsafe_allow_html=True)
+
+# PINDAHKAN STATUS INFORMASI KE SINI (SEBELUM FOOTER)
+status_container = st.container()
+with status_container:
+    st.markdown("---")
+    st.markdown("## 🔧 System Status")
+    
+    status_col1, status_col2 = st.columns([1, 1])
+    
+    with status_col1:
+        if python_version >= "3.12":
+            st.warning(f"⚠️ Python {python_version} - Using compatibility mode")
+        else:
+            st.success(f"✅ deployed with Python {python_version} - for Optimal Model")
+    
+    with status_col2:
+        if ML_AVAILABLE:
+            st.success("✅ HyperParameter best Model is Gradient Boosting for advanced algorithm")
+        else:
+            st.info("ℹ️ Using simplified algorithm")
 
 # Footer dengan responsive design
 footer_container = st.container()

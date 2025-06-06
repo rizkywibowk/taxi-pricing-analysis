@@ -32,33 +32,48 @@ try:
 except ImportError:
     pass
 
-# Enhanced CSS dengan semua improvements
+# Enhanced CSS dengan background hijau daun cerah (light mode) dan biru laut cerah (dark mode)
 st.markdown("""
 <style>
-    /* Root variables untuk theming */
+    /* Root variables untuk theming - Light Mode (Hijau Daun Cerah) */
     :root {
         --primary-color: #FF6B6B;
-        --secondary-color: #667eea;
-        --background-color: #ffffff;
-        --text-color: #262730;
-        --card-background: #f8f9fa;
-        --border-color: #e9ecef;
-        --success-color: #28a745;
-        --warning-color: #ffc107;
-        --danger-color: #dc3545;
-        --info-color: #17a2b8;
+        --secondary-color: #2e7d32;
+        --background-color: #e8f5e8; /* Hijau daun cerah untuk light mode */
+        --text-color: #1b5e20;
+        --card-background: rgba(255, 255, 255, 0.9);
+        --border-color: #81c784;
+        --success-color: #2e7d32;
+        --warning-color: #ff8f00;
+        --danger-color: #d32f2f;
+        --info-color: #1976d2;
     }
     
-    /* Dark mode variables */
+    /* Dark mode variables - Biru Laut Cerah */
     @media (prefers-color-scheme: dark) {
         :root {
             --primary-color: #FF6B6B;
-            --secondary-color: #667eea;
-            --background-color: #0e1117;
-            --text-color: #fafafa;
-            --card-background: #262730;
-            --border-color: #464a57;
+            --secondary-color: #4fc3f7;
+            --background-color: #0d47a1; /* Biru laut cerah untuk dark mode */
+            --text-color: #e3f2fd;
+            --card-background: rgba(30, 63, 102, 0.9);
+            --border-color: #42a5f5;
         }
+    }
+    
+    /* Override Streamlit default background */
+    .stApp {
+        background: linear-gradient(135deg, var(--background-color) 0%, 
+                   color-mix(in srgb, var(--background-color) 80%, white 20%) 100%);
+        color: var(--text-color);
+        transition: background 0.5s ease, color 0.5s ease;
+        min-height: 100vh;
+    }
+    
+    /* Card and container backgrounds */
+    .main .block-container {
+        background: transparent;
+        color: var(--text-color);
     }
     
     /* Enhanced main header with better typography */
@@ -67,23 +82,25 @@ st.markdown("""
         color: var(--primary-color);
         text-align: center;
         margin-bottom: 1.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         word-wrap: break-word;
         line-height: 1.2;
         font-weight: 700;
     }
     
-    /* Enhanced prediction box with larger text */
+    /* Enhanced prediction box */
     .prediction-box {
-        background: linear-gradient(135deg, var(--secondary-color) 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--secondary-color) 0%, 
+                   color-mix(in srgb, var(--secondary-color) 70%, black 30%) 100%);
         padding: clamp(1.5rem, 4vw, 2rem);
         border-radius: 20px;
         color: white;
         text-align: center;
         margin: 1.5rem 0;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
         word-wrap: break-word;
-        border: 2px solid rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
     }
     
     .prediction-box h1 {
@@ -93,90 +110,89 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     
-    /* Color-coded metric cards */
+    /* Enhanced metric cards with theme colors */
     .metric-card {
         background: var(--card-background);
+        backdrop-filter: blur(15px);
         padding: clamp(1rem, 3vw, 1.2rem);
         border-radius: 15px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         margin: 0.8rem 0;
         min-height: clamp(120px, 18vh, 180px);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         color: var(--text-color);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        border: 2px solid var(--border-color);
     }
     
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+        border-color: var(--secondary-color);
     }
     
-    /* Color coding for different categories */
+    /* Color coding untuk light mode (hijau) dan dark mode (biru) */
     .metric-card.surge-low {
         border-left: 8px solid var(--success-color);
-        background: linear-gradient(145deg, #d4edda, #c3e6cb);
+        background: linear-gradient(145deg, 
+                   color-mix(in srgb, var(--success-color) 20%, white 80%), 
+                   color-mix(in srgb, var(--success-color) 10%, white 90%));
     }
     
     .metric-card.surge-medium {
         border-left: 8px solid var(--warning-color);
-        background: linear-gradient(145deg, #fff3cd, #ffeaa7);
+        background: linear-gradient(145deg, 
+                   color-mix(in srgb, var(--warning-color) 20%, white 80%), 
+                   color-mix(in srgb, var(--warning-color) 10%, white 90%));
     }
     
     .metric-card.surge-high {
         border-left: 8px solid var(--danger-color);
-        background: linear-gradient(145deg, #f8d7da, #f5c6cb);
-    }
-    
-    .metric-card.loyalty-new {
-        border-left: 8px solid var(--danger-color);
-    }
-    
-    .metric-card.loyalty-regular {
-        border-left: 8px solid var(--warning-color);
-    }
-    
-    .metric-card.loyalty-loyal {
-        border-left: 8px solid var(--info-color);
-    }
-    
-    .metric-card.loyalty-vip {
-        border-left: 8px solid var(--success-color);
+        background: linear-gradient(145deg, 
+                   color-mix(in srgb, var(--danger-color) 20%, white 80%), 
+                   color-mix(in srgb, var(--danger-color) 10%, white 90%));
     }
     
     /* Enhanced info boxes */
     .info-box {
         background: var(--card-background);
+        backdrop-filter: blur(15px);
         padding: clamp(1rem, 3vw, 1.2rem);
         border-radius: 15px;
-        border-left: 6px solid #2196f3;
+        border-left: 6px solid var(--secondary-color);
         margin: 0.8rem 0;
         word-wrap: break-word;
         color: var(--text-color);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color);
     }
     
     .contact-info {
         background: var(--card-background);
+        backdrop-filter: blur(15px);
         padding: clamp(1rem, 3vw, 1.2rem);
         border-radius: 15px;
-        border-left: 6px solid #ff9800;
+        border-left: 6px solid var(--warning-color);
         margin: 0.8rem 0;
         word-wrap: break-word;
         color: var(--text-color);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color);
     }
     
     .header-box {
-        background: linear-gradient(135deg, var(--secondary-color) 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--secondary-color) 0%, 
+                   color-mix(in srgb, var(--secondary-color) 70%, black 30%) 100%);
         padding: clamp(2rem, 5vw, 3rem);
         text-align: center;
         border-radius: 20px;
         color: white;
         margin-bottom: 1.5rem;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
     }
     
     /* Enhanced tooltips */
@@ -189,20 +205,23 @@ st.markdown("""
     
     .tooltip .tooltiptext {
         visibility: hidden;
-        width: 200px;
-        background-color: #555;
-        color: #fff;
+        width: 220px;
+        background: linear-gradient(135deg, var(--card-background) 0%, 
+                   color-mix(in srgb, var(--card-background) 90%, black 10%) 100%);
+        color: var(--text-color);
         text-align: center;
-        border-radius: 6px;
-        padding: 8px;
+        border-radius: 8px;
+        padding: 10px;
         position: absolute;
-        z-index: 1;
+        z-index: 1000;
         bottom: 125%;
         left: 50%;
-        margin-left: -100px;
+        margin-left: -110px;
         opacity: 0;
         transition: opacity 0.3s;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     
     .tooltip:hover .tooltiptext {
@@ -210,54 +229,30 @@ st.markdown("""
         opacity: 1;
     }
     
-    /* Icons for better visual appeal */
+    /* Icons dengan theme colors */
     .icon {
         font-size: 1.2em;
         margin-right: 0.5rem;
         vertical-align: middle;
+        color: var(--secondary-color);
     }
     
-    /* Enhanced gauge visualization */
-    .gauge-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 1rem 0;
-    }
-    
-    .gauge {
-        width: 100px;
-        height: 50px;
-        border-radius: 100px 100px 0 0;
-        position: relative;
-        overflow: hidden;
-        background: #e0e0e0;
-    }
-    
-    .gauge-fill {
-        height: 100%;
-        border-radius: 100px 100px 0 0;
-        transition: width 0.5s ease;
-    }
-    
-    .gauge-low { background: var(--success-color); }
-    .gauge-medium { background: var(--warning-color); }
-    .gauge-high { background: var(--danger-color); }
-    
-    /* Fare breakdown styling */
+    /* Fare breakdown styling dengan theme */
     .fare-breakdown {
-        background: var(--card-background);
-        padding: 1rem;
-        border-radius: 10px;
+        background: color-mix(in srgb, var(--card-background) 95%, var(--secondary-color) 5%);
+        padding: 1.2rem;
+        border-radius: 12px;
         margin: 1rem 0;
-        border: 1px solid var(--border-color);
+        border: 2px solid var(--border-color);
+        backdrop-filter: blur(10px);
     }
     
     .fare-item {
         display: flex;
         justify-content: space-between;
-        padding: 0.5rem 0;
+        padding: 0.6rem 0;
         border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
     }
     
     .fare-item:last-child {
@@ -265,6 +260,25 @@ st.markdown("""
         font-weight: bold;
         font-size: 1.1em;
         color: var(--primary-color);
+    }
+    
+    /* Enhanced Streamlit widget styling */
+    .stSelectbox > div > div {
+        background: var(--card-background) !important;
+        color: var(--text-color) !important;
+        border: 2px solid var(--border-color) !important;
+        border-radius: 8px !important;
+    }
+    
+    .stNumberInput > div > div > input {
+        background: var(--card-background) !important;
+        color: var(--text-color) !important;
+        border: 2px solid var(--border-color) !important;
+        border-radius: 8px !important;
+    }
+    
+    .stSlider > div > div > div {
+        background: var(--card-background) !important;
     }
     
     /* Mobile responsiveness */
@@ -311,52 +325,43 @@ st.markdown("""
             min-width: 100% !important;
             margin-bottom: 1rem !important;
         }
-        
-        .fare-breakdown {
-            font-size: 0.9rem;
-        }
     }
     
-    /* Dark mode enhancements */
-    @media (prefers-color-scheme: dark) {
-        .prediction-box {
-            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
-            box-shadow: 0 12px 40px rgba(255,255,255,0.1) !important;
-        }
-        
-        .metric-card {
-            background: #262730 !important;
-            color: #fafafa !important;
-        }
-        
-        .info-box, .contact-info {
-            background: #262730 !important;
-            color: #fafafa !important;
-        }
-        
-        .fare-breakdown {
-            background: #262730 !important;
-            border-color: #464a57 !important;
-        }
-    }
-    
-    /* Enhanced button styling */
+    /* Enhanced button styling dengan theme */
     .stButton > button {
         width: 100%;
         padding: 1rem 1.5rem;
         font-size: clamp(1rem, 3vw, 1.2rem);
         font-weight: 600;
-        background: linear-gradient(135deg, var(--secondary-color) 0%, #0066cc 100%);
+        background: linear-gradient(135deg, var(--secondary-color) 0%, 
+                   color-mix(in srgb, var(--secondary-color) 80%, black 20%) 100%);
         color: white;
         border: none;
         border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    /* Enhanced expander styling */
+    .stExpander {
+        background: var(--card-background);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Enhanced dataframe styling */
+    .stDataFrame {
+        background: var(--card-background);
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        backdrop-filter: blur(10px);
     }
     
     /* Responsive containers */
@@ -365,6 +370,19 @@ st.markdown("""
         padding-bottom: 1rem;
         padding-left: clamp(1rem, 4vw, 3rem);
         padding-right: clamp(1rem, 4vw, 3rem);
+    }
+    
+    /* Text color overrides untuk visibility */
+    .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6 {
+        color: var(--text-color) !important;
+    }
+    
+    /* Footer styling dengan theme */
+    .footer-container {
+        background: var(--card-background);
+        backdrop-filter: blur(15px);
+        border: 2px solid var(--border-color);
+        color: var(--text-color);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -404,26 +422,31 @@ def create_gauge_chart(value, max_value=100, title=""):
         delta = {'reference': 50},
         gauge = {
             'axis': {'range': [None, max_value]},
-            'bar': {'color': "darkblue"},
+            'bar': {'color': "#2e7d32"},
             'steps': [
-                {'range': [0, 30], 'color': "lightgray"},
-                {'range': [30, 70], 'color': "gray"},
-                {'range': [70, 100], 'color': "darkgray"}
+                {'range': [0, 30], 'color': "#c8e6c9"},
+                {'range': [30, 70], 'color': "#81c784"},
+                {'range': [70, 100], 'color': "#4caf50"}
             ],
             'threshold': {
-                'line': {'color': "red", 'width': 4},
+                'line': {'color': "#d32f2f", 'width': 4},
                 'thickness': 0.75,
                 'value': 90
             }
         }
     ))
     
-    fig.update_layout(height=200, margin=dict(l=20, r=20, t=40, b=20))
+    fig.update_layout(
+        height=200, 
+        margin=dict(l=20, r=20, t=40, b=20),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
     return fig
 
 def create_surge_gauge(surge_value):
-    """Create surge level gauge"""
-    surge_percentage = min((surge_value - 1) * 50, 100)  # Convert 1-3 to 0-100
+    """Create surge level gauge dengan theme colors"""
+    surge_percentage = min((surge_value - 1) * 50, 100)
     
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
@@ -432,21 +455,26 @@ def create_surge_gauge(surge_value):
         title = {'text': "Surge Level"},
         gauge = {
             'axis': {'range': [None, 100]},
-            'bar': {'color': "darkblue"},
+            'bar': {'color': "#2e7d32"},
             'steps': [
-                {'range': [0, 33], 'color': "#28a745"},
-                {'range': [33, 66], 'color': "#ffc107"},
-                {'range': [66, 100], 'color': "#dc3545"}
+                {'range': [0, 33], 'color': "#c8e6c9"},
+                {'range': [33, 66], 'color': "#ffcc02"},
+                {'range': [66, 100], 'color': "#f44336"}
             ],
             'threshold': {
-                'line': {'color': "red", 'width': 4},
+                'line': {'color': "#d32f2f", 'width': 4},
                 'thickness': 0.75,
                 'value': 80
             }
         }
     ))
     
-    fig.update_layout(height=250, margin=dict(l=20, r=20, t=40, b=20))
+    fig.update_layout(
+        height=250, 
+        margin=dict(l=20, r=20, t=40, b=20),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
     return fig
 
 def calculate_surge_pricing(distance, rating, cab_type, traffic, demand, weather):
@@ -466,7 +494,6 @@ def calculate_surge_pricing(distance, rating, cab_type, traffic, demand, weather
         condition_factor = (float(traffic) + float(demand) + float(weather)) / 300
         surge = base_surge + distance_factor + rating_factor + cab_factor + condition_factor
         
-        # Return detailed breakdown
         breakdown = {
             'base': base_surge,
             'distance_factor': distance_factor,
@@ -529,7 +556,7 @@ def load_sample_data():
 display_header()
 
 # Enhanced title
-st.markdown('<h1 class="main-header">🎯 Intelligent Taxi Pricing Analysis</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🌿 Eco-Smart Taxi Pricing Analysis 🌊</h1>', unsafe_allow_html=True)
 
 # About section
 about_container = st.container()
@@ -551,7 +578,7 @@ with about_container:
         <div class="contact-info">
             <h4><span class="icon">📞</span>Contact Info</h4>
             <p><strong>Toll-Free:</strong><br>📞 1800-420-9999</p>
-            <p><strong>24/7:</strong><br>📱 040-63 63 63 63</p>
+            <p><strong>24/7:</strong><br>📞 040-63 63 63 63</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -587,7 +614,7 @@ with trip_container:
         cab_type = st.selectbox(
             "🚙 Vehicle Type:", 
             ['Economy (Micro)', 'Standard (Mini)', 'Premium (Prime)'],
-            help="Choose your preferred vehicle category: Economy (budget-friendly), Standard (comfortable), Premium (luxury)"
+            help="Choose your preferred vehicle category"
         )
     
     with trip_col2:
@@ -599,7 +626,7 @@ with trip_container:
         rating = st.slider(
             "⭐ Your Rating:", 
             1, 5, 4,
-            help="Your average rating as a customer (higher ratings may get better pricing)"
+            help="Your average rating as a customer"
         )
 
 # Customer Info
@@ -615,13 +642,13 @@ with customer_container:
             min_value=0, 
             max_value=120, 
             value=12,
-            help="How long you've been a customer (loyalty affects pricing)"
+            help="How long you've been a customer"
         )
         lifestyle = st.slider(
             "💎 Lifestyle Index:", 
             1.0, 3.0, 2.0, 
             step=0.1,
-            help="1: Budget-conscious, 2: Moderate, 3: Premium lifestyle preferences"
+            help="1: Budget-conscious, 2: Moderate, 3: Premium"
         )
     
     with cust_col2:
@@ -630,12 +657,12 @@ with customer_container:
             min_value=0, 
             max_value=10, 
             value=0,
-            help="Number of ride cancellations in the past month"
+            help="Number of ride cancellations"
         )
         confidence = st.selectbox(
             "🎯 Service Confidence:", 
             ['High Confidence', 'Medium Confidence', 'Low Confidence'],
-            help="Your confidence level in using taxi services regularly"
+            help="Your confidence level in using taxi services"
         )
 
 # Advanced Factors
@@ -648,21 +675,21 @@ with st.expander("🔧 Advanced Pricing Factors"):
         traffic = st.slider(
             "🚦 Traffic Density:", 
             0.0, 100.0, 50.0,
-            help="Current traffic conditions: 0 = No traffic, 100 = Heavy congestion"
+            help="Current traffic conditions"
         )
     
     with adv_col2:
         demand = st.slider(
             "📈 Demand Level:", 
             0.0, 100.0, 50.0,
-            help="Current demand for rides: 0 = Low demand, 100 = Very high demand"
+            help="Current demand for rides"
         )
     
     with adv_col3:
         weather = st.slider(
             "🌧️ Weather Impact:", 
             0.0, 100.0, 30.0,
-            help="Weather impact on travel: 0 = Perfect weather, 100 = Severe weather"
+            help="Weather impact on travel"
         )
 
 # Enhanced Prediction Button
@@ -679,7 +706,7 @@ with predict_container:
             <div class="prediction-box">
                 <h2>🎯 Predicted Surge Pricing</h2>
                 <h1>{surge:.2f}x</h1>
-                <p>The increased fare multiplier due to current conditions</p>
+                <p>Smart AI-powered fare multiplier</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -698,7 +725,7 @@ with predict_container:
                     <p><strong>Category:</strong> {category}</p>
                     <p><strong>Multiplier:</strong> 
                         <span class="tooltip">{surge:.2f}x
-                            <span class="tooltiptext">This multiplier increases your base fare due to high demand conditions</span>
+                            <span class="tooltiptext">This multiplier increases your base fare due to current demand conditions</span>
                         </span>
                     </p>
                     <p><strong>Distance:</strong> {distance} km</p>
@@ -706,13 +733,6 @@ with predict_container:
                 """, unsafe_allow_html=True)
                 
                 # Add surge gauge
-                if surge <= 1.5:
-                    gauge_color = "#28a745"
-                elif surge <= 2.5:
-                    gauge_color = "#ffc107"
-                else:
-                    gauge_color = "#dc3545"
-                
                 surge_fig = create_surge_gauge(surge)
                 st.plotly_chart(surge_fig, use_container_width=True)
             
@@ -764,7 +784,7 @@ with predict_container:
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Enhanced Conditions Impact with visual gauge
+            # Enhanced Conditions Impact
             st.markdown("### 🔍 Real-time Conditions Impact")
             
             condition_col1, condition_col2 = st.columns([1, 1])
@@ -780,7 +800,7 @@ with predict_container:
                     <p><strong>Demand Level:</strong> {demand:.0f}/100</p>
                     <p><strong>Weather Impact:</strong> {weather:.0f}/100</p>
                     <p><strong>Overall Impact:</strong> {impact} ({condition_score:.0f}/100)</p>
-                    <p><strong>💡 Recommendation:</strong> {'Consider alternative time or route' if condition_score > 70 else 'Good time to travel - optimal conditions'}</p>
+                    <p><strong>💡 Recommendation:</strong> {'Consider alternative time' if condition_score > 70 else 'Good time to travel'}</p>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -810,12 +830,16 @@ with predict_container:
                 y='Impact',
                 title="Factors Contributing to Surge Pricing",
                 color='Impact',
-                color_continuous_scale='RdYlBu_r'
+                color_continuous_scale='Greens'
             )
-            fig_factors.update_layout(height=400)
+            fig_factors.update_layout(
+                height=400,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
             st.plotly_chart(fig_factors, use_container_width=True)
             
-        except Exception as e:
+        except Exception:
             st.error("❌ Prediction error occurred")
             st.markdown("""
             <div class="prediction-box">
@@ -825,7 +849,7 @@ with predict_container:
             </div>
             """, unsafe_allow_html=True)
 
-# Enhanced Information Section with icons
+# Enhanced Information Section
 info_container = st.container()
 with info_container:
     st.markdown("---")
@@ -838,15 +862,15 @@ with info_container:
         <div class="info-box">
             <h3><span class="icon">🔍</span>Vehicle Categories</h3>
             <ul>
-                <li><strong>🚗 Economy (Micro):</strong> Budget-friendly, compact cars for short trips</li>
-                <li><strong>🚙 Standard (Mini):</strong> Regular sedans with good comfort for medium trips</li>
+                <li><strong>🚗 Economy (Micro):</strong> Budget-friendly, compact cars</li>
+                <li><strong>🚙 Standard (Mini):</strong> Regular sedans with good comfort</li>
                 <li><strong>🚘 Premium (Prime):</strong> Luxury vehicles with premium service</li>
             </ul>
             <h3><span class="icon">🎯</span>Confidence Levels</h3>
             <ul>
-                <li><strong>🟢 High:</strong> Frequent user who trusts the service completely</li>
-                <li><strong>🟡 Medium:</strong> Occasional user with moderate confidence</li>
-                <li><strong>🔴 Low:</strong> New or hesitant user, needs more assurance</li>
+                <li><strong>🟢 High:</strong> Frequent user, trusts service</li>
+                <li><strong>🟡 Medium:</strong> Occasional user</li>
+                <li><strong>🔴 Low:</strong> New or hesitant user</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -856,13 +880,13 @@ with info_container:
         <div class="info-box">
             <h3><span class="icon">🌧️</span>Dynamic Pricing Factors</h3>
             <ul>
-                <li><strong>🚦 Traffic Density:</strong> Real-time road congestion levels</li>
-                <li><strong>📈 Demand Level:</strong> Current booking requests in your area</li>
-                <li><strong>🌤️ Weather Impact:</strong> Weather conditions affecting travel safety</li>
-                <li><strong>📏 Distance:</strong> Primary cost factor for your journey</li>
+                <li><strong>🚦 Traffic Density:</strong> Real-time road congestion</li>
+                <li><strong>📈 Demand Level:</strong> Current booking requests</li>
+                <li><strong>🌤️ Weather Impact:</strong> Weather conditions affecting travel</li>
+                <li><strong>📏 Distance:</strong> Primary cost factor</li>
             </ul>
             <h3><span class="icon">🤖</span>How Our AI Works</h3>
-            <p>Our advanced machine learning model analyzes <strong>13+ factors</strong> in real-time to predict fair and transparent surge pricing, ensuring you get the best possible fare.</p>
+            <p>Our advanced machine learning model analyzes <strong>13+ factors</strong> in real-time to predict fair and transparent surge pricing.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -892,12 +916,11 @@ with footer_container:
     st.markdown("---")
     st.markdown(f"""
     <div class="footer-container" style="text-align: center; padding: clamp(1.5rem, 4vw, 2rem); 
-               border-radius: 15px; margin-top: 1.5rem; background: var(--card-background);
-               border: 1px solid var(--border-color);">
+               border-radius: 15px; margin-top: 1.5rem;">
         <h3 style="margin: 0; font-size: clamp(1.3rem, 5vw, 2rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
         <p style="margin: 1rem 0; font-size: clamp(1rem, 3vw, 1.2rem);">Safe • Reliable • Affordable • 24/7 Available</p>
         <p style="margin: 0; font-size: clamp(0.9rem, 2.5vw, 1rem);">
-            <strong>Python {python_version} | {'🤖 ML Enhanced' if ML_AVAILABLE else '⚡ Simplified Mode'} | 📱 Mobile Optimized</strong>
+            <strong>Python {python_version} | {'🤖 ML Enhanced' if ML_AVAILABLE else '⚡ Simplified Mode'} | 🌿🌊 Eco-Ocean Theme</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)

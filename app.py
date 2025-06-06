@@ -179,7 +179,6 @@ if st.button('🔮 Calculate Smart Pricing', type="primary", use_container_width
     </div>
     """, unsafe_allow_html=True)
 
-
 def get_surge_category_class(surge_value):
     """Get CSS class for surge category"""
     if surge_value <= 1.5:

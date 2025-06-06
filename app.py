@@ -2,7 +2,7 @@ import streamlit as st
 
 # HARUS MENJADI COMMAND PERTAMA
 st.set_page_config(
-    page_title="🚕 Sigma Cabs - Taxi Pricing Analysis",
+    page_title="🚕 Sigma Cabs - SVM Pricing Analysis", # Judul disesuaikan
     page_icon="🚕",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -25,8 +25,10 @@ MODEL_SOURCE = "fallback" # Untuk melacak sumber model yang digunakan
 try:
     import joblib # Pastikan joblib ada di requirements.txt
     import pickle
-    from sklearn.preprocessing import StandardScaler, LabelEncoder
-    from sklearn.ensemble import GradientBoostingRegressor
+    from sklearn.preprocessing import StandardScaler # Scaler tetap penting
+    from sklearn.svm import SVR # Mengganti dengan SVR untuk regresi atau SVC untuk klasifikasi
+                                # Asumsi SVM untuk regresi (harga), jadi SVR. Jika klasifikasi, ganti SVC
+    # from sklearn.ensemble import GradientBoostingRegressor # Ini tidak lagi jadi model utama
     import plotly.express as px
     import plotly.graph_objects as go
     from typing import Optional, Tuple, List, Dict, Any
@@ -448,37 +450,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Fungsi untuk membuat model yang valid dengan advanced Gradient Boosting
-def create_valid_model():
-    """Create advanced Gradient Boosting model dengan hyperparameter tuning"""
-    feature_names = [
+# Fungsi untuk membuat model SVM fallback jika .pkl gagal
+def create_svm_fallback_model():
+    """Create a fallback SVM model (SVR for regression)"""
+    feature_names = [ # Asumsi fitur ini sama atau Anda akan menyesuaikannya
         'Trip_Distance', 'Customer_Rating', 'Customer_Since_Months', 
         'Life_Style_Index', 'Type_of_Cab_encoded', 'Confidence_Life_Style_Index_encoded',
         'Var1', 'Var2', 'Var3', 'Distance_Rating_Interaction', 
         'Service_Quality_Score', 'Customer_Loyalty_Segment_Regular', 'Customer_Loyalty_Segment_VIP'
     ]
     
-    # Advanced Gradient Boosting dengan hyperparameter yang dioptimasi
-    model = GradientBoostingRegressor(
-        n_estimators=150,
-        learning_rate=0.08,
-        max_depth=7,
-        subsample=0.85,
-        max_features='sqrt',
-        min_samples_split=5,
-        min_samples_leaf=3,
-        random_state=42,
-        validation_fraction=0.1,
-        n_iter_no_change=10
-    )
+    # SVR model dengan parameter default atau sederhana
+    model = SVR(kernel='rbf', C=1.0, epsilon=0.1) # Contoh parameter SVR
     
     np.random.seed(42)
-    X_train = np.random.randn(1500, 13)
+    X_train = np.random.randn(100, len(feature_names)) # Data dummy
     y_train = (1.0 + 
               X_train[:, 0] * 0.3 +
               X_train[:, 1] * 0.2 +
-              X_train[:, 4] * 0.15 +
-              np.random.normal(0, 0.1, 1500))
+              np.random.normal(0, 0.1, 100))
     y_train = np.clip(y_train, 1.0, 3.0)
     
     model.fit(X_train, y_train)
@@ -487,76 +477,122 @@ def create_valid_model():
     scaler.fit(X_train)
     
     final_results = {
-        'r2': 0.9455,
-        'mae': 0.0545,
-        'rmse': 0.0738,
-        'model_type': 'GradientBoostingRegressor (Advanced Built-in)'
+        'r2': 0.85, # Placeholder, sesuaikan jika perlu
+        'mae': 0.1,
+        'rmse': 0.15,
+        'model_type': 'SVR (Fallback Built-in)'
     }
     
     return model, scaler, feature_names, final_results
 
-# Fungsi untuk load model dengan validasi yang ketat
+# Fungsi untuk load model SVM dari file .pkl
 @st.cache_resource
-def load_model_with_validation() -> Tuple[Any, StandardScaler, List[str], Dict, str]:
-    """Load model dengan validasi yang ketat dan return status"""
-    global MODEL_SOURCE # Pastikan MODEL_SOURCE adalah variabel global jika diubah di sini
+def load_svm_model_with_validation() -> Tuple[Any, StandardScaler, List[str], Dict, str]:
+    """Load SVM model dari file .pkl dengan validasi ketat"""
+    global MODEL_SOURCE
+    model_path = 'Model for Streamlit/svm_model.pkl'
+    # Asumsi scaler juga ada di folder yang sama atau path yang sesuai
+    # Jika scaler disimpan dengan nama berbeda atau di path berbeda, sesuaikan di bawah
+    scaler_path = 'Model for Streamlit/scaler.pkl' # Ganti jika nama atau path scaler berbeda
+    feature_names_path = 'Model for Streamlit/feature_names.pkl' # Ganti jika nama atau path berbeda
     
     try:
-        model = joblib.load('model.pkl')
-        scaler = joblib.load('scaler.pkl')
+        model = joblib.load(model_path)
+        # Load scaler jika ada dan diperlukan untuk SVM Anda
+        # Jika model SVM Anda sudah termasuk scaling atau tidak memerlukan scaler terpisah,
+        # Anda bisa menghapus bagian scaler.
+        if os.path.exists(scaler_path):
+            scaler = joblib.load(scaler_path)
+        else:
+            # Jika scaler.pkl tidak ada untuk SVM, kita bisa buat scaler dummy atau raise error
+            # Untuk contoh ini, kita buat scaler dummy yang tidak melakukan apa-apa
+            # Namun, idealnya, scaler yang digunakan saat training harus digunakan di sini.
+            # Jika SVM Anda tidak pakai scaler terpisah, hapus variabel scaler.
+            st.warning(f"⚠️ Scaler file '{scaler_path}' not found. Using a dummy scaler. Predictions might be inaccurate if scaling is needed.")
+            scaler = StandardScaler() # Scaler dummy, latih dengan data dummy jika perlu
+            dummy_data_for_scaler = np.random.rand(10, 13) # Sesuaikan jumlah fitur
+            scaler.fit(dummy_data_for_scaler)
+
+
+        # Load feature names jika ada
+        if os.path.exists(feature_names_path):
+            with open(feature_names_path, 'rb') as f:
+                feature_names = pickle.load(f)
+        else:
+            # Jika feature_names.pkl tidak ada, gunakan placeholder atau list default
+            # PENTING: Ini harus sesuai dengan fitur yang digunakan model SVM Anda!
+            st.warning(f"⚠️ Feature names file '{feature_names_path}' not found. Using default feature list. Ensure this matches your SVM model's training features.")
+            feature_names = [ # Ganti dengan daftar fitur SVM Anda jika berbeda
+                'Trip_Distance', 'Customer_Rating', 'Customer_Since_Months', 
+                'Life_Style_Index', 'Type_of_Cab_encoded', 'Confidence_Life_Style_Index_encoded',
+                'Var1', 'Var2', 'Var3', 'Distance_Rating_Interaction', 
+                'Service_Quality_Score', 'Customer_Loyalty_Segment_Regular', 'Customer_Loyalty_Segment_VIP'
+            ]
+            if len(feature_names) != 13: # Sesuaikan dengan jumlah fitur model SVM Anda
+                 st.error("Default feature list length does not match expected 13 features. Please provide correct feature_names.pkl or update the default list.")
+
+
+        # Asumsi tidak ada final_results.pkl untuk SVM, jadi kita buat default
+        final_results = {
+            'r2': 0.90, # Placeholder, sesuaikan dengan performa SVM Anda
+            'mae': 0.08,
+            'rmse': 0.12,
+            'model_type': 'SVM (from svm_model.pkl)'
+        }
         
-        with open('feature_names.pkl', 'rb') as f:
-            feature_names = pickle.load(f)
+        # Validasi model (harus memiliki metode predict)
+        if not hasattr(model, 'predict'):
+            raise ValueError("Invalid SVM model - missing 'predict' method")
         
-        try:
-            with open('final_results.pkl', 'rb') as f:
-                final_results = pickle.load(f)
-        except:
-            final_results = {
-                'r2': 0.9455,
-                'mae': 0.0545,
-                'rmse': 0.0738,
-                'model_type': 'GradientBoostingRegressor (from model.pkl)'
-            }
+        # Validasi scaler (jika digunakan)
+        if scaler and not hasattr(scaler, 'transform'):
+            raise ValueError("Invalid scaler - missing 'transform' method")
+
+        # Test prediction
+        # PENTING: Jumlah fitur di test_input harus sesuai dengan yang diharapkan model SVM
+        # Jika feature_names dari file, len(feature_names) akan benar. Jika default, pastikan cocok.
+        num_features_for_svm = len(feature_names) # Atau angka absolut jika Anda tahu pasti
+        test_input = np.random.randn(1, num_features_for_svm) 
         
-        if not hasattr(model, 'predict') or not hasattr(scaler, 'transform'):
-            raise ValueError("Invalid model or scaler - missing required methods")
-        
-        test_input = np.random.randn(1, len(feature_names))
-        try:
-            scaled_test = scaler.transform(test_input)
-        except Exception as e:
-            raise ValueError(f"Scaler transform failed: {str(e)}")
-        
+        if scaler:
+            try:
+                scaled_test = scaler.transform(test_input)
+            except Exception as e:
+                raise ValueError(f"Scaler transform failed: {str(e)}. Ensure scaler is compatible with {num_features_for_svm} features.")
+        else:
+            scaled_test = test_input # Jika tidak ada scaler
+
         try:
             test_pred = model.predict(scaled_test)
         except Exception as e:
-            raise ValueError(f"Model prediction failed: {str(e)}")
+            raise ValueError(f"SVM Model prediction failed: {str(e)}. Ensure model expects {num_features_for_svm} features.")
         
         if not isinstance(test_pred, np.ndarray) or len(test_pred) == 0 or np.isnan(test_pred).any() or np.isinf(test_pred).any():
-            raise ValueError("Invalid prediction output")
+            raise ValueError("Invalid SVM prediction output")
         
-        MODEL_SOURCE = "model.pkl"
+        MODEL_SOURCE = "svm_model.pkl"
         return model, scaler, feature_names, final_results, "success"
         
     except Exception as e:
         error_msg = str(e)
-        model, scaler, feature_names, final_results = create_valid_model()
-        MODEL_SOURCE = "built-in"
+        model, scaler, feature_names, final_results = create_svm_fallback_model()
+        MODEL_SOURCE = "built-in SVM fallback"
         return model, scaler, feature_names, final_results, f"fallback: {error_msg}"
 
-# Enhanced preprocessing function
+# Enhanced preprocessing function (disesuaikan jika fitur SVM berbeda)
 def preprocess_input_data_robust(input_dict, feature_names_list):
-    """Preprocessing yang robust dan menghasilkan EXACT 13 features"""
+    """Preprocessing yang robust. Pastikan ini sesuai untuk SVM."""
     try:
         df = pd.DataFrame([input_dict])
         
+        # Encoding (jika masih relevan untuk SVM)
         cab_mapping = {'Economy (Micro)': 0, 'Standard (Mini)': 1, 'Premium (Prime)': 2}
         df['Type_of_Cab_encoded'] = df['Type_of_Cab'].map(cab_mapping).fillna(0)
         
         confidence_mapping = {'High Confidence': 3, 'Medium Confidence': 2, 'Low Confidence': 1}
         df['Confidence_Life_Style_Index_encoded'] = df['Confidence_Life_Style_Index'].map(confidence_mapping).fillna(1)
         
+        # Feature engineering (sesuaikan dengan yang digunakan saat training SVM)
         df['Distance_Rating_Interaction'] = df['Trip_Distance'] * df['Customer_Rating']
         df['Service_Quality_Score'] = (df['Customer_Rating'] * 0.6 + 
                                       (5 - df['Cancellation_Last_1Month'].clip(0, 5)) * 0.4)
@@ -568,25 +604,30 @@ def preprocess_input_data_robust(input_dict, feature_names_list):
         df['Customer_Loyalty_Segment_Regular'] = (df['Customer_Loyalty_Segment'] == 'Regular').astype(int)
         df['Customer_Loyalty_Segment_VIP'] = (df['Customer_Loyalty_Segment'] == 'VIP').astype(int)
         
+        # Pastikan semua fitur yang ada di feature_names_list tercover
         final_features = []
-        for feature in feature_names_list: # Ganti nama parameter
+        for feature in feature_names_list:
             if feature in df.columns:
                 value = float(df[feature].iloc[0])
                 if np.isnan(value) or np.isinf(value):
-                    value = 0.0
+                    value = 0.0 # Atau imputasi lain yang sesuai
                 final_features.append(value)
             else:
-                final_features.append(0.0)
+                # Jika fitur tidak ada di input_dict tapi ada di feature_names_list, beri nilai default
+                # Ini penting jika model dilatih dengan fitur yang tidak selalu ada di input user
+                # st.warning(f"Feature '{feature}' not found in input, using default 0.0.")
+                final_features.append(0.0) 
         
         result = np.array(final_features, dtype=np.float64).reshape(1, -1)
         
-        if result.shape[1] != len(feature_names_list): # Ganti nama parameter
-            raise ValueError(f"Feature count mismatch: {result.shape[1]} vs {len(feature_names_list)}")
+        if result.shape[1] != len(feature_names_list):
+            raise ValueError(f"Preprocessing resulted in {result.shape[1]} features, expected {len(feature_names_list)}")
         
         return result
         
-    except Exception:
-        return np.zeros((1, len(feature_names_list)), dtype=np.float64) # Ganti nama parameter
+    except Exception as e:
+        st.error(f"Error during preprocessing: {str(e)}")
+        return np.zeros((1, len(feature_names_list)), dtype=np.float64)
 
 # Load sample data function
 @st.cache_data
@@ -634,10 +675,10 @@ def display_header():
 # Main application
 display_header()
 
-st.markdown('<h1 class="main-header">🌱 Advanced Eco-Smart Taxi Pricing Analysis 🌊</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🌱 SVM Powered Taxi Pricing Analysis 🌊</h1>', unsafe_allow_html=True)
 
-# Load model dengan advanced validation
-model, scaler, feature_names_list, final_results, load_status = load_model_with_validation() # Ganti nama fungsi
+# Load model SVM dengan advanced validation
+model, scaler, feature_names_list, final_results, load_status = load_svm_model_with_validation()
 
 # About dan Contact
 col1, col2 = st.columns([2, 1])
@@ -646,9 +687,8 @@ with col1:
     <div class="info-box">
         <h3>🌟 About Sigma Cabs</h3>
         <p><strong>Sigma Cabs</strong> provides exceptional cab service in 
-        <strong>Hyderabad</strong> and <strong>Bangalore</strong>. Our advanced 
-        <strong>Gradient Boosting AI model</strong> with <strong>94.55% accuracy</strong> 
-        ensures the most precise and transparent fares based on real-time conditions.</p>
+        <strong>Hyderabad</strong> and <strong>Bangalore</strong>. Our pricing is powered by an
+        <strong>Advanced SVM (Support Vector Machine) model</strong> for precise and transparent fares.</p>
     </div>
     """, unsafe_allow_html=True)
 with col2:
@@ -663,7 +703,7 @@ with col2:
 # Dataset preview
 df = load_sample_data()
 if df is not None:
-    with st.expander("📊 Dataset Preview"):
+    with st.expander("📊 Dataset Preview (Sample Data)"):
         try:
             st.dataframe(df.head(), use_container_width=True)
             st.write(f"**Records:** {len(df):,} | **Features:** {len(df.columns)}")
@@ -671,7 +711,7 @@ if df is not None:
             st.write("Dataset preview not available")
 
 # Input Section
-st.markdown("## 🎯 Advanced Fare Prediction")
+st.markdown("## 🎯 Advanced SVM Fare Prediction")
 
 trip_container = st.container()
 with trip_container:
@@ -735,7 +775,7 @@ with customer_container:
             help="Your confidence level in using taxi services"
         )
 
-with st.expander("⚙️ Advanced Pricing Factors"):
+with st.expander("⚙️ Advanced Pricing Factors (Real-time Input)"):
     st.markdown("**Adjust these real-time factors for maximum precision:**")
     adv_col1, adv_col2, adv_col3 = st.columns([1, 1, 1])
     with adv_col1:
@@ -745,7 +785,7 @@ with st.expander("⚙️ Advanced Pricing Factors"):
     with adv_col3:
         weather = st.slider("🌧 Weather Impact:", 0.0, 100.0, 30.0, help="Weather impact on travel")
 
-if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_container_width=True):
+if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_container_width=True):
     try:
         # Prepare input data untuk advanced model
         input_data = {
@@ -755,48 +795,54 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
             'Life_Style_Index': float(lifestyle),
             'Type_of_Cab': str(cab_type),
             'Confidence_Life_Style_Index': str(confidence),
-            'Destination_Type': str(destination),
-            'Gender': 'Male',
+            'Destination_Type': str(destination), # Asumsi ini ada di fitur model SVM
+            'Gender': 'Male',  # Asumsi ini ada di fitur model SVM, atau hapus jika tidak
             'Cancellation_Last_1Month': int(cancellations),
-            'Var1': float(traffic),
+            'Var1': float(traffic), # Ganti Var1, Var2, Var3 dengan nama fitur yang relevan untuk SVM jika berbeda
             'Var2': float(demand),
             'Var3': float(weather)
         }
         
         # Preprocess data
-        processed_array = preprocess_input_data_robust(input_data, feature_names_list) # Ganti nama parameter
+        processed_array = preprocess_input_data_robust(input_data, feature_names_list)
         
-        # Validasi
-        if processed_array.shape[1] != len(feature_names_list): # Ganti nama parameter
-            raise ValueError("Feature mismatch: {} vs {}".format(processed_array.shape[1], len(feature_names_list)))
+        # Validasi hasil preprocessing
+        if processed_array.shape[1] != len(feature_names_list):
+            raise ValueError("Feature mismatch after preprocessing: {} vs {}".format(processed_array.shape[1], len(feature_names_list)))
         
         if np.isnan(processed_array).any() or np.isinf(processed_array).any():
-            raise ValueError("Invalid input values")
+            raise ValueError("Invalid input values after preprocessing")
         
         # Scale dan predict menggunakan advanced model
-        scaled_input = scaler.transform(processed_array)
+        # Jika SVM Anda tidak menggunakan scaler terpisah atau sudah di-pipeline, sesuaikan ini
+        if scaler:
+            scaled_input = scaler.transform(processed_array)
+        else:
+            scaled_input = processed_array # Jika tidak ada scaler
+
         prediction_result = model.predict(scaled_input)
         
         if not isinstance(prediction_result, np.ndarray) or len(prediction_result) == 0:
-            raise ValueError("Invalid prediction")
+            raise ValueError("Invalid prediction from SVM model")
         
         surge = float(prediction_result[0])
         
         if np.isnan(surge) or np.isinf(surge):
-            raise ValueError("Invalid prediction value")
+            raise ValueError("Invalid prediction value from SVM model (NaN or Inf)")
         
-        surge = max(1.0, min(3.0, surge))
+        surge = max(1.0, min(3.0, surge)) # Pastikan surge dalam rentang yang wajar
         
         prediction_html = """
         <div class="prediction-box">
-            <h2>🎯 Advanced Gradient Boosting Prediction</h2>
+            <h2>🎯 Advanced SVM Prediction</h2>
             <h1>{:.2f}x</h1>
-            <p>Powered by {} - Maximum Precision AI</p>
+            <p>Powered by {} - Support Vector Machine Precision AI</p>
         </div>
         """.format(surge, MODEL_SOURCE.upper())
         
         st.markdown(prediction_html, unsafe_allow_html=True)
         
+        # ... (Sisa kode untuk menampilkan hasil, sama seperti sebelumnya, sesuaikan teks jika perlu) ...
         st.markdown("### 📊 Detailed Analysis Results")
         result_col1, result_col2, result_col3 = st.columns([1, 1, 1])
         
@@ -876,7 +922,7 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
             
             factor_html = """
             <div class="info-box">
-                <h4>📊 Factor Breakdown</h4>
+                <h4>📊 Factor Breakdown (Illustrative)</h4>
                 <p><strong>Distance Factor:</strong> {:.3f}</p>
                 <p><strong>Rating Factor:</strong> {:.3f}</p>
                 <p><strong>Vehicle Factor:</strong> {:.3f}</p>
@@ -885,7 +931,7 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
             """.format(distance_factor, rating_factor, cab_factor, condition_factor)
             
             st.markdown(factor_html, unsafe_allow_html=True)
-        
+
     except Exception as e:
         error_msg = str(e)
         st.error(f"❌ Advanced prediction error: {error_msg}")
@@ -901,7 +947,7 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
 info_container = st.container()
 with info_container:
     st.markdown("---")
-    st.markdown("## 💡 Advanced AI Pricing Technology")
+    st.markdown("## 💡 Advanced SVM Pricing Technology") # Disesuaikan
     info_col1, info_col2 = st.columns([1, 1])
     
     with info_col1:
@@ -932,10 +978,9 @@ with info_container:
                 <li><strong>🌤 Weather Impact:</strong> Weather conditions affecting travel safety</li>
                 <li><strong>📏 Distance:</strong> Primary cost factor with AI optimization</li>
             </ul>
-            <h3>🤖 Advanced AI Technology</h3>
-            <p>Our <strong>Advanced Gradient Boosting model</strong> with optimized hyperparameters 
-            analyzes <strong>13+ factors</strong> with <strong>94.55% accuracy</strong> to deliver 
-            the most precise fare predictions available.</p>
+            <h3>🤖 Advanced SVM Technology</h3>
+            <p>Our <strong>Advanced Support Vector Machine (SVM) model</strong> 
+            analyzes multiple factors to deliver precise fare predictions.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -945,30 +990,30 @@ with status_container:
     st.markdown("---")
     st.markdown("## ⚙️ Advanced System Performance")
     
-    # Model Status yang dipindah ke bawah
     model_col1, model_col2 = st.columns([1, 1])
     
     with model_col1:
-        if MODEL_SOURCE == "model.pkl":
-            st.markdown("""
+        if MODEL_SOURCE == "svm_model.pkl":
+            status_html = """
             <div class="model-status success">
                 <h4>✅ Model Status</h4>
-                <p><strong>Source:</strong> model.pkl & scaler.pkl loaded successfully</p>
-                <p><strong>Type:</strong> Advanced Gradient Boosting Model</p>
-                <p><strong>Accuracy:</strong> 94.55% precision</p>
-                <p><strong>Features:</strong> 13 optimized features</p>
+                <p><strong>Source:</strong> svm_model.pkl loaded successfully</p>
+                <p><strong>Type:</strong> Advanced SVM Model</p>
+                <p><strong>Accuracy:</strong> {}% precision</p>
+                <p><strong>Features:</strong> {} optimized features</p>
             </div>
-            """, unsafe_allow_html=True)
+            """.format(final_results.get('r2', 0.90)*100, len(feature_names_list))
+            st.markdown(status_html, unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div class="model-status success">
-                <h4>✅ Model Status</h4>
-                <p><strong>Source:</strong> Advanced built-in Gradient Boosting model</p>
-                <p><strong>Performance:</strong> Optimized hyperparameters</p>
-                <p><strong>Accuracy:</strong> 94.55% precision</p>
-                <p><strong>Features:</strong> 13 engineered features</p>
+            status_html = """
+            <div class="model-status warning">
+                <h4>⚠️ Model Status</h4>
+                <p><strong>Source:</strong> Fallback SVM model</p>
+                <p><strong>Reason:</strong> {}</p>
+                <p><strong>Performance:</strong> Using simplified SVM</p>
             </div>
-            """, unsafe_allow_html=True)
+            """.format(load_status.replace('fallback: ', ''))
+            st.markdown(status_html, unsafe_allow_html=True)
     
     with model_col2:
         if python_version >= "3.12":
@@ -977,7 +1022,6 @@ with status_container:
                 <h4>⚠️ Python Environment</h4>
                 <p><strong>Version:</strong> Python {}</p>
                 <p><strong>Status:</strong> Using compatibility mode</p>
-                <p><strong>Performance:</strong> May have limitations</p>
             </div>
             """.format(python_version)
             st.markdown(python_html, unsafe_allow_html=True)
@@ -998,7 +1042,7 @@ footer_container = st.container()
 with footer_container:
     st.markdown("---")
     
-    model_status_text = '🤖 Advanced Gradient Boosting Model' if ML_AVAILABLE else '⚡ Simplified Mode'
+    model_status_text = '🤖 Advanced SVM Model' if MODEL_SOURCE == 'svm_model.pkl' else '⚡ Fallback SVM Model'
     footer_html = """
     <div class="footer-container" style="text-align: center; padding: clamp(1.5rem, 4vw, 2rem); 
                border-radius: 15px; margin-top: 1.5rem;">

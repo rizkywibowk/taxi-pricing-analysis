@@ -734,7 +734,7 @@ with footer_container:
         <h3 style="margin: 0; font-size: clamp(1.3rem, 5vw, 2rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
         <p style="margin: 1rem 0; font-size: clamp(1rem, 3vw, 1.2rem);">Safe • Reliable • Affordable • 24/7 Available</p>
         <p style="margin: 0; font-size: clamp(0.9rem, 2.5vw, 1rem);">
-            <strong>Python {} | {} | 🌱 All Device Optimized</strong>
+            <strong>Python {} | {} | 🌱 Eco-Green Theme</strong>
         </p>
     </div>
     """.format(python_version, model_status_text)

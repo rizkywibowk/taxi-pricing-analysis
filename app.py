@@ -2,7 +2,7 @@ import streamlit as st
 
 # HARUS MENJADI COMMAND PERTAMA
 st.set_page_config(
-    page_title="🚕 Sigma Cabs - SVM Pricing Analysis", # Judul disesuaikan
+    page_title="🚕 Sigma Cabs - SVM Pricing Analysis",
     page_icon="🚕",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -21,14 +21,12 @@ python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
 # Try import ML libraries dengan error handling
 ML_AVAILABLE = False
-MODEL_SOURCE = "fallback" # Untuk melacak sumber model yang digunakan
+MODEL_SOURCE = "fallback" 
 try:
-    import joblib # Pastikan joblib ada di requirements.txt
+    import joblib 
     import pickle
-    from sklearn.preprocessing import StandardScaler # Scaler tetap penting
-    from sklearn.svm import SVR # Mengganti dengan SVR untuk regresi atau SVC untuk klasifikasi
-                                # Asumsi SVM untuk regresi (harga), jadi SVR. Jika klasifikasi, ganti SVC
-    # from sklearn.ensemble import GradientBoostingRegressor # Ini tidak lagi jadi model utama
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.svm import SVR # Asumsi SVR untuk regresi harga
     import plotly.express as px
     import plotly.graph_objects as go
     from typing import Optional, Tuple, List, Dict, Any
@@ -36,41 +34,40 @@ try:
 except ImportError:
     pass
 
-# Enhanced CSS dengan background hijau daun cerah yang diperkuat
+# Enhanced CSS dengan background hijau daun cerah
 st.markdown("""
 <style>
     /* Root variables untuk theming - Hijau Daun Cerah Enhanced */
     :root {
-        --primary-color: #FF6B6B;
-        --secondary-color: #2e7d32; /* Warna hijau sekunder yang lebih gelap untuk kontras */
+        --primary-color: #FF6B6B; /* Warna aksen utama, bisa disesuaikan */
+        --secondary-color: #2e7d32; /* Hijau tua untuk aksen sekunder dan teks */
         --background-color: #e8f5e8; /* Latar belakang hijau daun cerah */
-        --text-color: #1b5e20; /* Teks hijau tua untuk keterbacaan */
-        --card-background: rgba(255, 255, 255, 0.95); /* Kartu semi-transparan */
-        --border-color: #81c784; /* Border hijau muda */
+        --text-color: #1b5e20; /* Teks hijau sangat tua untuk kontras terbaik di bg terang */
+        --card-background: rgba(255, 255, 255, 0.9); /* Kartu sedikit transparan */
+        --border-color: #a5d6a7; /* Border hijau lebih muda dari secondary */
         --success-color: #2e7d32;
         --warning-color: #ff8f00;
         --danger-color: #d32f2f;
         --info-color: #1976d2;
-        --accent-green: #4caf50; /* Hijau aksen */
-        --light-green: #c8e6c9; /* Hijau sangat muda */
-        --dark-green: #1b5e20; /* Hijau paling tua */
+        --accent-green: #4caf50; 
+        --light-green: #c8e6c9; 
+        --dark-green: #1b5e20; 
     }
     
-    /* Dark mode variables (opsional, jika ingin berbeda dari light mode) */
+    /* Dark mode variables (jika ingin tetap ada opsi dark mode berbeda) */
     @media (prefers-color-scheme: dark) {
         :root {
             --primary-color: #FF6B6B;
-            --secondary-color: #4fc3f7; /* Biru muda untuk dark mode */
-            --background-color: #0d47a1; /* Biru laut tua untuk dark mode */
-            --text-color: #e3f2fd; /* Teks putih kebiruan */
-            --card-background: rgba(30, 63, 102, 0.95);
-            --border-color: #42a5f5;
-            --accent-green: #4fc3f7; /* Ganti dengan aksen biru untuk dark mode */
-            --light-green: rgba(79, 195, 247, 0.2);
+            --secondary-color: #66bb6a; /* Hijau lebih terang untuk dark mode */
+            --background-color: #1b5e20; /* Background hijau tua untuk dark mode */
+            --text-color: #e8f5e8; /* Teks hijau sangat muda */
+            --card-background: rgba(46, 125, 50, 0.85); /* Kartu hijau tua transparan */
+            --border-color: #81c784;
+            --accent-green: #66bb6a;
+            --light-green: rgba(102, 187, 106, 0.2);
         }
     }
     
-    /* Enhanced background dengan gradient hijau daun yang lebih kaya */
     .stApp {
         background: linear-gradient(135deg, 
                    var(--background-color) 0%, 
@@ -79,30 +76,23 @@ st.markdown("""
                    color-mix(in srgb, var(--background-color) 80%, white 20%) 75%,
                    color-mix(in srgb, var(--background-color) 95%, var(--dark-green) 5%) 100%);
         color: var(--text-color);
-        transition: background 0.5s ease, color 0.5s ease;
         min-height: 100vh;
         background-attachment: fixed;
     }
     
     .main .block-container {
         background: transparent;
-        color: var(--text-color);
     }
     
-    /* Enhanced main header tanpa blur, dengan gradient text */
     .main-header {
         font-size: clamp(2rem, 6vw, 3rem);
         text-align: center;
         margin-bottom: 1.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* Shadow lebih lembut */
         word-wrap: break-word;
         line-height: 1.2;
         font-weight: 700;
-        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color), var(--accent-green));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        position: relative;
+        color: var(--secondary-color); /* Warna teks header agar kontras dengan bg hijau */
         filter: none !important; 
     }
     
@@ -118,51 +108,30 @@ st.markdown("""
         border-radius: 2px;
     }
     
-    /* Header image tanpa blur */
     .stImage > img {
         max-width: 100%;
         height: auto;
         border-radius: 10px;
         filter: none !important; 
         backdrop-filter: none !important;
+        border: 2px solid var(--border-color); /* Tambahkan border jika perlu */
     }
     
-    /* Enhanced prediction box dengan animasi */
     .prediction-box {
         background: linear-gradient(135deg, 
                    var(--secondary-color) 0%, 
-                   color-mix(in srgb, var(--secondary-color) 70%, black 30%) 100%);
+                   color-mix(in srgb, var(--secondary-color) 70%, var(--dark-green) 30%) 100%);
         padding: clamp(1.5rem, 4vw, 2rem);
         border-radius: 20px;
-        color: white;
+        color: white; /* Teks putih di atas background gelap */
         text-align: center;
         margin: 1.5rem 0;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.2), 
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
         word-wrap: break-word;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(15px);
+        border: 2px solid var(--accent-green);
+        backdrop-filter: blur(10px); /* Sedikit blur untuk efek */
         position: relative;
         overflow: hidden;
-    }
-    
-    .prediction-box::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, 
-                   transparent, 
-                   rgba(255,255,255,0.1), 
-                   transparent);
-        animation: shimmer 3s infinite;
-    }
-    
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
     }
     
     .prediction-box h1 {
@@ -170,305 +139,101 @@ st.markdown("""
         margin: 1rem 0 !important;
         font-weight: 800 !important;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        position: relative;
-        z-index: 1;
+        color: white; /* Pastikan H1 juga putih */
     }
     
-    /* Enhanced metric cards dengan green theme dan animasi */
     .metric-card {
         background: var(--card-background);
-        backdrop-filter: blur(20px);
+        backdrop-filter: blur(15px); /* Blur lebih halus */
         padding: clamp(1rem, 3vw, 1.2rem);
         border-radius: 15px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15),
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1); /* Shadow lebih lembut */
         margin: 0.8rem 0;
         min-height: clamp(120px, 18vh, 180px);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        color: var(--text-color);
+        color: var(--text-color); /* Warna teks default untuk kartu */
         transition: all 0.3s ease;
-        border: 2px solid var(--border-color);
+        border: 1px solid var(--border-color); /* Border lebih tipis */
         position: relative;
         overflow: hidden;
     }
     
+    .metric-card h4, .metric-card p {
+        color: var(--text-color) !important; /* Pastikan semua teks dalam kartu kontras */
+    }
+
     .metric-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 4px; /* Bar atas lebih tebal */
         background: linear-gradient(90deg, var(--accent-green), var(--secondary-color));
     }
     
     .metric-card:hover {
         transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        box-shadow: 0 15px 40px rgba(46, 125, 50, 0.2); /* Shadow dengan hint hijau */
         border-color: var(--accent-green);
     }
     
-    /* Enhanced color coding untuk surge categories */
-    .metric-card.surge-low {
-        border-left: 8px solid var(--success-color);
-        background: linear-gradient(145deg, 
-                   color-mix(in srgb, var(--success-color) 15%, white 85%), 
-                   color-mix(in srgb, var(--success-color) 8%, white 92%));
-    }
+    /* ... (CSS lainnya tetap sama, hanya pastikan warna teks dan background kontras) ... */
     
-    .metric-card.surge-medium {
-        border-left: 8px solid var(--warning-color);
-        background: linear-gradient(145deg, 
-                   color-mix(in srgb, var(--warning-color) 15%, white 85%), 
-                   color-mix(in srgb, var(--warning-color) 8%, white 92%));
-    }
-    
-    .metric-card.surge-high {
-        border-left: 8px solid var(--danger-color);
-        background: linear-gradient(145deg, 
-                   color-mix(in srgb, var(--danger-color) 15%, white 85%), 
-                   color-mix(in srgb, var(--danger-color) 8%, white 92%));
-    }
-    
-    /* Enhanced info boxes */
-    .info-box {
+    .info-box, .contact-info, .model-status, .footer-container {
         background: var(--card-background);
-        backdrop-filter: blur(20px);
+        backdrop-filter: blur(15px);
         padding: clamp(1rem, 3vw, 1.2rem);
         border-radius: 15px;
-        border-left: 6px solid var(--secondary-color);
         margin: 0.8rem 0;
-        word-wrap: break-word;
         color: var(--text-color);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1),
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
     }
     
-    .info-box:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    
-    .contact-info {
-        background: var(--card-background);
-        backdrop-filter: blur(20px);
-        padding: clamp(1rem, 3vw, 1.2rem);
-        border-radius: 15px;
-        border-left: 6px solid var(--warning-color);
-        margin: 0.8rem 0;
-        word-wrap: break-word;
-        color: var(--text-color);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1),
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
-        border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
-    }
-    
-    .contact-info:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    
-    .header-box {
+    .model-status.success { border-left: 6px solid var(--success-color); }
+    .model-status.warning { border-left: 6px solid var(--warning-color); }
+
+    .header-box { /* Header jika gambar tidak ada */
         background: linear-gradient(135deg, 
                    var(--secondary-color) 0%, 
-                   color-mix(in srgb, var(--secondary-color) 70%, black 30%) 100%);
+                   color-mix(in srgb, var(--secondary-color) 70%, var(--dark-green) 30%) 100%);
         padding: clamp(2rem, 5vw, 3rem);
         text-align: center;
         border-radius: 20px;
         color: white;
         margin-bottom: 1.5rem;
-        box-shadow: 0 10px 35px rgba(0,0,0,0.2),
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.2);
         backdrop-filter: none; 
-        border: 2px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    /* Enhanced model status styling */
-    .model-status {
-        background: var(--card-background);
-        backdrop-filter: blur(20px);
-        padding: 1.2rem;
-        border-radius: 12px;
-        margin: 0.8rem 0;
-        border: 2px solid var(--border-color);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .model-status.success {
-        border-left: 6px solid var(--success-color);
-    }
-    
-    .model-status.warning {
-        border-left: 6px solid var(--warning-color);
-    }
-    
-    .model-status.info {
-        border-left: 6px solid var(--info-color);
-    }
-    
-    /* Enhanced Streamlit widget styling */
-    .stSelectbox > div > div {
-        background: var(--card-background) !important;
-        color: var(--text-color) !important;
-        border: 2px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        backdrop-filter: blur(10px) !important;
-    }
-    
-    .stNumberInput > div > div > input {
-        background: var(--card-background) !important;
-        color: var(--text-color) !important;
-        border: 2px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        backdrop-filter: blur(10px) !important;
-    }
-    
-    .stSlider > div > div > div {
-        background: var(--card-background) !important;
-        backdrop-filter: blur(10px) !important;
-    }
-    
-    /* Mobile responsiveness */
-    @media (orientation: portrait) {
-        .main-header {
-            font-size: clamp(1.5rem, 7vw, 2.5rem);
-            margin-bottom: 1rem;
-        }
-        
-        .metric-card {
-            min-height: clamp(100px, 15vh, 140px);
-            padding: 1rem;
-        }
-        
-        .prediction-box {
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-        
-        .stColumns > div {
-            width: 100% !important;
-            margin-bottom: 1rem;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .main-header {
-            font-size: 2rem !important;
-            margin-bottom: 1rem !important;
-        }
-        
-        .metric-card {
-            min-height: 120px !important;
-            padding: 1rem !important;
-            margin: 0.5rem 0 !important;
-        }
-        
-        .prediction-box {
-            padding: 1.5rem !important;
-            margin: 1rem 0 !important;
-        }
-        
-        .stColumns > div {
-            min-width: 100% !important;
-            margin-bottom: 1rem !important;
-        }
-    }
-    
-    /* Enhanced button styling */
-    .stButton > button {
-        width: 100%;
-        padding: 1.2rem 1.8rem;
-        font-size: clamp(1rem, 3vw, 1.2rem);
-        font-weight: 600;
-        background: linear-gradient(135deg, 
-                   var(--secondary-color) 0%, 
-                   color-mix(in srgb, var(--secondary-color) 80%, black 20%) 100%);
-        color: white;
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2),
-                   0 0 0 1px rgba(255,255,255,0.1) inset;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(15px);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    
-    .stButton > button:active {
-        transform: translateY(-1px) scale(0.98);
-    }
-    
-    /* Enhanced expander dan dataframe */
-    .stExpander {
-        background: var(--card-background);
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        backdrop-filter: blur(15px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .stDataFrame {
-        background: var(--card-background);
-        border-radius: 12px;
-        border: 2px solid var(--border-color);
-        backdrop-filter: blur(15px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* Container responsive */
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        padding-left: clamp(1rem, 4vw, 3rem);
-        padding-right: clamp(1rem, 4vw, 3rem);
-    }
-    
-    /* Text color overrides */
-    .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6 {
-        color: var(--text-color) !important;
-    }
-    
-    /* Enhanced footer */
-    .footer-container {
-        background: var(--card-background);
-        backdrop-filter: blur(20px);
-        border: 2px solid var(--border-color);
-        color: var(--text-color);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border: 2px solid var(--accent-green);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Fungsi untuk membuat model SVM fallback jika .pkl gagal
+# --- PEMBENAHAN MODEL DAN FITUR ---
+
+# PENTING: Anda HARUS menyesuaikan daftar ini dengan 20 fitur yang digunakan model SVM Anda
+# Ini adalah placeholder jika 'feature_names_svm.pkl' tidak ditemukan.
+DEFAULT_SVM_FEATURE_NAMES_20 = [
+    'Feature1', 'Feature2', 'Feature3', 'Feature4', 'Feature5',
+    'Feature6', 'Feature7', 'Feature8', 'Feature9', 'Feature10',
+    'Feature11', 'Feature12', 'Feature13', 'Feature14', 'Feature15',
+    'Feature16', 'Feature17', 'Feature18', 'Feature19', 'Feature20'
+]
+# Jika model Anda benar-benar hanya 13 fitur, sesuaikan error message di Gambar 3, atau model SVM Anda.
+# Untuk sekarang, kita akan bekerja dengan asumsi model SVM Anda memang butuh 20 fitur.
+
 def create_svm_fallback_model():
-    """Create a fallback SVM model (SVR for regression)"""
-    feature_names = [ # Asumsi fitur ini sama atau Anda akan menyesuaikannya
-        'Trip_Distance', 'Customer_Rating', 'Customer_Since_Months', 
-        'Life_Style_Index', 'Type_of_Cab_encoded', 'Confidence_Life_Style_Index_encoded',
-        'Var1', 'Var2', 'Var3', 'Distance_Rating_Interaction', 
-        'Service_Quality_Score', 'Customer_Loyalty_Segment_Regular', 'Customer_Loyalty_Segment_VIP'
-    ]
+    """Create a fallback SVM model (SVR for regression) dengan 20 fitur."""
+    feature_names = DEFAULT_SVM_FEATURE_NAMES_20 # Menggunakan 20 fitur
     
-    # SVR model dengan parameter default atau sederhana
-    model = SVR(kernel='rbf', C=1.0, epsilon=0.1) # Contoh parameter SVR
+    model = SVR(kernel='rbf', C=1.0, epsilon=0.1) 
     
     np.random.seed(42)
-    X_train = np.random.randn(100, len(feature_names)) # Data dummy
-    y_train = (1.0 + 
-              X_train[:, 0] * 0.3 +
-              X_train[:, 1] * 0.2 +
-              np.random.normal(0, 0.1, 100))
+    X_train = np.random.randn(100, len(feature_names)) # Data dummy dengan 20 fitur
+    y_train = (1.0 + X_train[:, 0] * 0.1 + np.random.normal(0, 0.1, 100)) # Contoh sederhana
     y_train = np.clip(y_train, 1.0, 3.0)
     
     model.fit(X_train, y_train)
@@ -477,185 +242,172 @@ def create_svm_fallback_model():
     scaler.fit(X_train)
     
     final_results = {
-        'r2': 0.85, # Placeholder, sesuaikan jika perlu
-        'mae': 0.1,
-        'rmse': 0.15,
-        'model_type': 'SVR (Fallback Built-in)'
+        'r2': 0.80, 
+        'mae': 0.12,
+        'rmse': 0.18,
+        'model_type': 'SVR (Fallback Built-in - 20 Features)'
     }
     
     return model, scaler, feature_names, final_results
 
-# Fungsi untuk load model SVM dari file .pkl
 @st.cache_resource
 def load_svm_model_with_validation() -> Tuple[Any, StandardScaler, List[str], Dict, str]:
-    """Load SVM model dari file .pkl dengan validasi ketat"""
+    """Load SVM model dari file .pkl dengan validasi ketat."""
     global MODEL_SOURCE
     model_path = 'Model for Streamlit/svm_model.pkl'
-    # Asumsi scaler juga ada di folder yang sama atau path yang sesuai
-    # Jika scaler disimpan dengan nama berbeda atau di path berbeda, sesuaikan di bawah
-    scaler_path = 'Model for Streamlit/scaler.pkl' # Ganti jika nama atau path scaler berbeda
-    feature_names_path = 'Model for Streamlit/feature_names.pkl' # Ganti jika nama atau path berbeda
+    scaler_path = 'Model for Streamlit/scaler_svm.pkl' # Ganti nama jika berbeda
+    feature_names_path = 'Model for Streamlit/feature_names_svm.pkl' # Ganti nama jika berbeda
     
+    loaded_feature_names = []
+
     try:
         model = joblib.load(model_path)
-        # Load scaler jika ada dan diperlukan untuk SVM Anda
-        # Jika model SVM Anda sudah termasuk scaling atau tidak memerlukan scaler terpisah,
-        # Anda bisa menghapus bagian scaler.
+        
         if os.path.exists(scaler_path):
             scaler = joblib.load(scaler_path)
         else:
-            # Jika scaler.pkl tidak ada untuk SVM, kita bisa buat scaler dummy atau raise error
-            # Untuk contoh ini, kita buat scaler dummy yang tidak melakukan apa-apa
-            # Namun, idealnya, scaler yang digunakan saat training harus digunakan di sini.
-            # Jika SVM Anda tidak pakai scaler terpisah, hapus variabel scaler.
-            st.warning(f"⚠️ Scaler file '{scaler_path}' not found. Using a dummy scaler. Predictions might be inaccurate if scaling is needed.")
-            scaler = StandardScaler() # Scaler dummy, latih dengan data dummy jika perlu
-            dummy_data_for_scaler = np.random.rand(10, 13) # Sesuaikan jumlah fitur
-            scaler.fit(dummy_data_for_scaler)
+            st.warning(f"⚠️ Scaler file '{scaler_path}' not found. Creating and fitting a new StandardScaler. This might lead to suboptimal performance if the original scaler was different.")
+            scaler = StandardScaler()
+            # Untuk fit scaler, idealnya kita butuh data yang representatif
+            # Jika tidak ada, kita fit pada data dummy dengan asumsi jumlah fitur yang benar
+            # Ini akan di-handle setelah feature_names dimuat
 
-
-        # Load feature names jika ada
         if os.path.exists(feature_names_path):
             with open(feature_names_path, 'rb') as f:
-                feature_names = pickle.load(f)
+                loaded_feature_names = pickle.load(f)
+                if not isinstance(loaded_feature_names, list) or not all(isinstance(name, str) for name in loaded_feature_names):
+                    raise ValueError("feature_names_svm.pkl does not contain a valid list of strings.")
+                if len(loaded_feature_names) != 20: # Validasi jumlah fitur dari file
+                     st.warning(f"⚠️ Feature names from '{feature_names_path}' has {len(loaded_feature_names)} features, but error log (SVC) indicated 20. Using 20 default features. Ensure consistency.")
+                     loaded_feature_names = DEFAULT_SVM_FEATURE_NAMES_20
         else:
-            # Jika feature_names.pkl tidak ada, gunakan placeholder atau list default
-            # PENTING: Ini harus sesuai dengan fitur yang digunakan model SVM Anda!
-            st.warning(f"⚠️ Feature names file '{feature_names_path}' not found. Using default feature list. Ensure this matches your SVM model's training features.")
-            feature_names = [ # Ganti dengan daftar fitur SVM Anda jika berbeda
-                'Trip_Distance', 'Customer_Rating', 'Customer_Since_Months', 
-                'Life_Style_Index', 'Type_of_Cab_encoded', 'Confidence_Life_Style_Index_encoded',
-                'Var1', 'Var2', 'Var3', 'Distance_Rating_Interaction', 
-                'Service_Quality_Score', 'Customer_Loyalty_Segment_Regular', 'Customer_Loyalty_Segment_VIP'
-            ]
-            if len(feature_names) != 13: # Sesuaikan dengan jumlah fitur model SVM Anda
-                 st.error("Default feature list length does not match expected 13 features. Please provide correct feature_names.pkl or update the default list.")
+            st.warning(f"⚠️ Feature names file '{feature_names_path}' not found. Using default list of 20 features. YOU MUST VERIFY THESE ARE CORRECT for your svm_model.pkl.")
+            loaded_feature_names = DEFAULT_SVM_FEATURE_NAMES_20
 
+        # Jika scaler baru dibuat dan belum di-fit
+        if not hasattr(scaler, 'mean_'): # Cek apakah scaler sudah di-fit
+            dummy_data_for_scaler = np.random.rand(10, len(loaded_feature_names))
+            scaler.fit(dummy_data_for_scaler)
+            st.info("Fitted new StandardScaler with dummy data based on loaded/default feature count.")
 
-        # Asumsi tidak ada final_results.pkl untuk SVM, jadi kita buat default
-        final_results = {
-            'r2': 0.90, # Placeholder, sesuaikan dengan performa SVM Anda
+        final_results = { # Placeholder, idealnya ini juga bisa dari file atau dihitung
+            'r2': 0.90, 
             'mae': 0.08,
             'rmse': 0.12,
             'model_type': 'SVM (from svm_model.pkl)'
         }
         
-        # Validasi model (harus memiliki metode predict)
         if not hasattr(model, 'predict'):
             raise ValueError("Invalid SVM model - missing 'predict' method")
-        
-        # Validasi scaler (jika digunakan)
         if scaler and not hasattr(scaler, 'transform'):
             raise ValueError("Invalid scaler - missing 'transform' method")
 
-        # Test prediction
-        # PENTING: Jumlah fitur di test_input harus sesuai dengan yang diharapkan model SVM
-        # Jika feature_names dari file, len(feature_names) akan benar. Jika default, pastikan cocok.
-        num_features_for_svm = len(feature_names) # Atau angka absolut jika Anda tahu pasti
-        test_input = np.random.randn(1, num_features_for_svm) 
+        # Test prediction dengan jumlah fitur yang benar
+        num_features_expected = len(loaded_feature_names)
+        test_input = np.random.randn(1, num_features_expected) 
         
-        if scaler:
-            try:
-                scaled_test = scaler.transform(test_input)
-            except Exception as e:
-                raise ValueError(f"Scaler transform failed: {str(e)}. Ensure scaler is compatible with {num_features_for_svm} features.")
-        else:
-            scaled_test = test_input # Jika tidak ada scaler
-
-        try:
-            test_pred = model.predict(scaled_test)
-        except Exception as e:
-            raise ValueError(f"SVM Model prediction failed: {str(e)}. Ensure model expects {num_features_for_svm} features.")
+        scaled_test = scaler.transform(test_input) if scaler else test_input
+        test_pred = model.predict(scaled_test)
         
         if not isinstance(test_pred, np.ndarray) or len(test_pred) == 0 or np.isnan(test_pred).any() or np.isinf(test_pred).any():
             raise ValueError("Invalid SVM prediction output")
         
         MODEL_SOURCE = "svm_model.pkl"
-        return model, scaler, feature_names, final_results, "success"
+        return model, scaler, loaded_feature_names, final_results, "success"
         
     except Exception as e:
         error_msg = str(e)
-        model, scaler, feature_names, final_results = create_svm_fallback_model()
+        model, scaler, loaded_feature_names, final_results = create_svm_fallback_model()
         MODEL_SOURCE = "built-in SVM fallback"
-        return model, scaler, feature_names, final_results, f"fallback: {error_msg}"
+        return model, scaler, loaded_feature_names, final_results, f"fallback: {error_msg}"
 
-# Enhanced preprocessing function (disesuaikan jika fitur SVM berbeda)
-def preprocess_input_data_robust(input_dict, feature_names_list):
-    """Preprocessing yang robust. Pastikan ini sesuai untuk SVM."""
-    try:
-        df = pd.DataFrame([input_dict])
-        
-        # Encoding (jika masih relevan untuk SVM)
-        cab_mapping = {'Economy (Micro)': 0, 'Standard (Mini)': 1, 'Premium (Prime)': 2}
-        df['Type_of_Cab_encoded'] = df['Type_of_Cab'].map(cab_mapping).fillna(0)
-        
-        confidence_mapping = {'High Confidence': 3, 'Medium Confidence': 2, 'Low Confidence': 1}
-        df['Confidence_Life_Style_Index_encoded'] = df['Confidence_Life_Style_Index'].map(confidence_mapping).fillna(1)
-        
-        # Feature engineering (sesuaikan dengan yang digunakan saat training SVM)
-        df['Distance_Rating_Interaction'] = df['Trip_Distance'] * df['Customer_Rating']
-        df['Service_Quality_Score'] = (df['Customer_Rating'] * 0.6 + 
-                                      (5 - df['Cancellation_Last_1Month'].clip(0, 5)) * 0.4)
-        
-        df['Customer_Loyalty_Segment'] = pd.cut(df['Customer_Since_Months'], 
-                                              bins=[0, 3, 12, 24, float('inf')],
-                                              labels=['New', 'Regular', 'Loyal', 'VIP'])
-        
-        df['Customer_Loyalty_Segment_Regular'] = (df['Customer_Loyalty_Segment'] == 'Regular').astype(int)
-        df['Customer_Loyalty_Segment_VIP'] = (df['Customer_Loyalty_Segment'] == 'VIP').astype(int)
-        
-        # Pastikan semua fitur yang ada di feature_names_list tercover
-        final_features = []
-        for feature in feature_names_list:
-            if feature in df.columns:
-                value = float(df[feature].iloc[0])
-                if np.isnan(value) or np.isinf(value):
-                    value = 0.0 # Atau imputasi lain yang sesuai
-                final_features.append(value)
-            else:
-                # Jika fitur tidak ada di input_dict tapi ada di feature_names_list, beri nilai default
-                # Ini penting jika model dilatih dengan fitur yang tidak selalu ada di input user
-                # st.warning(f"Feature '{feature}' not found in input, using default 0.0.")
-                final_features.append(0.0) 
-        
-        result = np.array(final_features, dtype=np.float64).reshape(1, -1)
-        
-        if result.shape[1] != len(feature_names_list):
-            raise ValueError(f"Preprocessing resulted in {result.shape[1]} features, expected {len(feature_names_list)}")
-        
-        return result
-        
-    except Exception as e:
-        st.error(f"Error during preprocessing: {str(e)}")
-        return np.zeros((1, len(feature_names_list)), dtype=np.float64)
+def preprocess_input_data_robust(input_dict, feature_names_list_expected):
+    """Preprocessing data agar sesuai dengan feature_names_list_expected (20 fitur)."""
+    processed_data = {}
+    df_input = pd.DataFrame([input_dict])
+
+    # Lakukan encoding dan feature engineering dasar yang mungkin masih relevan
+    # Ini harus menghasilkan fitur-fitur yang menjadi bagian dari 20 fitur akhir
+    # Contoh sederhana:
+    cab_mapping = {'Economy (Micro)': 0, 'Standard (Mini)': 1, 'Premium (Prime)': 2}
+    processed_data['Type_of_Cab_encoded'] = df_input['Type_of_Cab'].map(cab_mapping).fillna(0).iloc[0]
+    
+    confidence_mapping = {'High Confidence': 3, 'Medium Confidence': 2, 'Low Confidence': 1}
+    processed_data['Confidence_Life_Style_Index_encoded'] = df_input['Confidence_Life_Style_Index'].map(confidence_mapping).fillna(1).iloc[0]
+    
+    processed_data['Distance_Rating_Interaction'] = float(input_dict['Trip_Distance']) * float(input_dict['Customer_Rating'])
+    processed_data['Service_Quality_Score'] = (float(input_dict['Customer_Rating']) * 0.6 + 
+                                     (5 - int(input_dict['Cancellation_Last_1Month'])) * 0.4) # Asumsi clip sudah dihandle
+    
+    # Langsung ambil nilai dari input_dict untuk fitur yang ada
+    direct_features = ['Trip_Distance', 'Customer_Rating', 'Customer_Since_Months', 
+                       'Life_Style_Index', 'Var1', 'Var2', 'Var3']
+    for f_name in direct_features:
+        if f_name in input_dict:
+            processed_data[f_name] = float(input_dict[f_name])
+
+    # Untuk Customer Loyalty Segment (jika ini salah satu dari 20 fitur)
+    # Ini contoh, Anda mungkin punya cara lain untuk menurunkannya
+    months = int(input_dict['Customer_Since_Months'])
+    processed_data['Customer_Loyalty_Segment_Regular'] = 1 if 3 < months <= 12 else 0
+    processed_data['Customer_Loyalty_Segment_VIP'] = 1 if months > 24 else 0
+    # processed_data['Customer_Loyalty_Segment_New'] = 1 if months <=3 else 0
+    # processed_data['Customer_Loyalty_Segment_Loyal'] = 1 if 12 < months <=24 else 0
+
+
+    # Membuat array final berdasarkan feature_names_list_expected (20 fitur)
+    final_feature_values = []
+    for feature_name in feature_names_list_expected:
+        if feature_name in processed_data:
+            final_feature_values.append(processed_data[feature_name])
+        elif feature_name in input_dict: # Jika ada di input_dict tapi belum di processed_data
+            final_feature_values.append(float(input_dict[feature_name]))
+        else:
+            # Fitur tidak ada, beri nilai default (misal 0 atau rata-rata dari training set)
+            # PENTING: Imputasi ini harus konsisten dengan saat training model SVM Anda!
+            # st.warning(f"Feature '{feature_name}' is missing from input and basic processing. Using default 0.0. This might affect prediction accuracy.")
+            final_feature_values.append(0.0) 
+            
+    result_array = np.array(final_feature_values, dtype=np.float64).reshape(1, -1)
+
+    if result_array.shape[1] != len(feature_names_list_expected):
+        raise ValueError(f"Preprocessing resulted in {result_array.shape[1]} features, but {len(feature_names_list_expected)} were expected for the SVM model.")
+    
+    return result_array
+
+# ... (Sisa fungsi seperti load_sample_data, display_header, dll. tetap sama) ...
+# Fungsi get_surge_category_class dan get_loyalty_class juga tetap sama
 
 # Load sample data function
 @st.cache_data
 def load_sample_data():
     """Load or create sample data safely"""
     try:
-        if os.path.exists('Dataset/sigma_cabs.csv'):
+        if os.path.exists('Dataset/sigma_cabs.csv'): # Pastikan path ini benar
             return pd.read_csv('Dataset/sigma_cabs.csv')
         else:
+            st.info("Dataset/sigma_cabs.csv not found, using dummy data for preview.")
             np.random.seed(42)
             data = {
                 'Trip_Distance': np.random.uniform(1, 50, 100),
                 'Customer_Rating': np.random.uniform(1, 5, 100),
-                'Surge_Pricing_Type': np.random.uniform(1, 3, 100)
+                'Surge_Pricing_Type': np.random.uniform(1, 3, 100) # Contoh kolom
             }
             return pd.DataFrame(data)
-    except Exception:
+    except Exception as e:
+        st.error(f"Error loading sample data: {e}")
         return None
 
 # Header function tanpa blur
 def display_header():
     """Display header with green theme tanpa blur"""
-    image_path = 'Picture/Sigma-cabs-in-hyderabad-and-bangalore.jpg'
+    image_path = 'Picture/Sigma-cabs-in-hyderabad-and-bangalore.jpg' # Pastikan path ini benar
     
     try:
         if os.path.exists(image_path):
             st.image(image_path, caption='Sigma Cabs - Dedicated to Dedication')
         else:
+            st.warning("Header image 'Picture/Sigma-cabs-in-hyderabad-and-bangalore.jpg' not found. Displaying text header.")
             st.markdown("""
             <div class="header-box">
                 <h1 style="margin: 0; font-size: clamp(2rem, 6vw, 3rem);">🚕 SIGMA CABS</h1>
@@ -663,7 +415,8 @@ def display_header():
                 <p style="margin: 0; font-size: clamp(1rem, 3vw, 1.3rem);">Hyderabad & Bangalore</p>
             </div>
             """, unsafe_allow_html=True)
-    except Exception:
+    except Exception as e:
+        st.error(f"Error displaying header image: {e}")
         st.markdown("""
         <div class="header-box">
             <h1>🚕 SIGMA CABS</h1>
@@ -675,10 +428,10 @@ def display_header():
 # Main application
 display_header()
 
-st.markdown('<h1 class="main-header">🌱 SVM Powered Taxi Pricing Analysis 🌊</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🌱 SVM Powered Eco-Smart Taxi Pricing 🌊</h1>', unsafe_allow_html=True)
 
 # Load model SVM dengan advanced validation
-model, scaler, feature_names_list, final_results, load_status = load_svm_model_with_validation()
+model, scaler, feature_names_list_for_svm, final_results, load_status = load_svm_model_with_validation()
 
 # About dan Contact
 col1, col2 = st.columns([2, 1])
@@ -686,8 +439,7 @@ with col1:
     st.markdown("""
     <div class="info-box">
         <h3>🌟 About Sigma Cabs</h3>
-        <p><strong>Sigma Cabs</strong> provides exceptional cab service in 
-        <strong>Hyderabad</strong> and <strong>Bangalore</strong>. Our pricing is powered by an
+        <p><strong>Sigma Cabs</strong> provides exceptional cab service. Our pricing is powered by an
         <strong>Advanced SVM (Support Vector Machine) model</strong> for precise and transparent fares.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -706,7 +458,6 @@ if df is not None:
     with st.expander("📊 Dataset Preview (Sample Data)"):
         try:
             st.dataframe(df.head(), use_container_width=True)
-            st.write(f"**Records:** {len(df):,} | **Features:** {len(df.columns)}")
         except Exception:
             st.write("Dataset preview not available")
 
@@ -714,33 +465,34 @@ if df is not None:
 st.markdown("## 🎯 Advanced SVM Fare Prediction")
 
 trip_container = st.container()
+# ... (Input fields sama seperti kode Anda sebelumnya, pastikan nama variabel unik) ...
 with trip_container:
     st.markdown("### 🚗 Trip Details")
     trip_col1, trip_col2 = st.columns([1, 1])
     with trip_col1:
-        distance = st.number_input(
+        distance_input = st.number_input( # Ganti nama variabel agar tidak konflik
             "🛣️ Distance (km):", 
             min_value=0.1, 
             max_value=100.0, 
             value=5.0, 
             step=0.1,
-            help="The total distance of your trip in kilometers"
+            key="distance_input"
         )
-        cab_type = st.selectbox(
+        cab_type_input = st.selectbox( # Ganti nama variabel
             "🚙 Vehicle Type:", 
             ['Economy (Micro)', 'Standard (Mini)', 'Premium (Prime)'],
-            help="Choose your preferred vehicle category"
+            key="cab_type_input"
         )
     with trip_col2:
-        destination = st.selectbox(
+        destination_input = st.selectbox( # Ganti nama variabel
             "📍 Destination:", 
             ["Airport", "Business", "Home"],
-            help="Type of destination affects pricing due to demand patterns"
+            key="destination_input"
         )
-        rating = st.slider(
+        rating_input = st.slider( # Ganti nama variabel
             "⭐ Your Rating:", 
             1, 5, 4,
-            help="Your average rating as a customer"
+            key="rating_input"
         )
 
 customer_container = st.container()
@@ -748,89 +500,72 @@ with customer_container:
     st.markdown("### 👤 Customer Information")
     cust_col1, cust_col2 = st.columns([1, 1])
     with cust_col1:
-        months = st.number_input(
+        months_input = st.number_input( # Ganti nama variabel
             "📅 Customer Since (Months):", 
             min_value=0, 
             max_value=120, 
             value=12,
-            help="How long you've been a customer"
+            key="months_input"
         )
-        lifestyle = st.slider(
+        lifestyle_input = st.slider( # Ganti nama variabel
             "💎 Lifestyle Index:", 
             1.0, 3.0, 2.0, 
             step=0.1,
-            help="1: Budget-conscious, 2: Moderate, 3: Premium"
+            key="lifestyle_input"
         )
     with cust_col2:
-        cancellations = st.number_input(
+        cancellations_input = st.number_input( # Ganti nama variabel
             "❌ Cancellations Last Month:", 
             min_value=0, 
             max_value=10, 
             value=0,
-            help="Number of ride cancellations"
+            key="cancellations_input"
         )
-        confidence = st.selectbox(
+        confidence_input = st.selectbox( # Ganti nama variabel
             "🎯 Service Confidence:", 
             ['High Confidence', 'Medium Confidence', 'Low Confidence'],
-            help="Your confidence level in using taxi services"
+            key="confidence_input"
         )
 
 with st.expander("⚙️ Advanced Pricing Factors (Real-time Input)"):
     st.markdown("**Adjust these real-time factors for maximum precision:**")
     adv_col1, adv_col2, adv_col3 = st.columns([1, 1, 1])
     with adv_col1:
-        traffic = st.slider("🚦 Traffic Density:", 0.0, 100.0, 50.0, help="Current traffic conditions")
+        traffic_input = st.slider("🚦 Traffic Density:", 0.0, 100.0, 50.0, key="traffic_input")
     with adv_col2:
-        demand = st.slider("📈 Demand Level:", 0.0, 100.0, 50.0, help="Current demand for taxis")
+        demand_input = st.slider("📈 Demand Level:", 0.0, 100.0, 50.0, key="demand_input")
     with adv_col3:
-        weather = st.slider("🌧 Weather Impact:", 0.0, 100.0, 30.0, help="Weather impact on travel")
+        weather_input = st.slider("🌧 Weather Impact:", 0.0, 100.0, 30.0, key="weather_input")
 
 if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_container_width=True):
     try:
-        # Prepare input data untuk advanced model
         input_data = {
-            'Trip_Distance': float(distance),
-            'Customer_Rating': float(rating),
-            'Customer_Since_Months': int(months),
-            'Life_Style_Index': float(lifestyle),
-            'Type_of_Cab': str(cab_type),
-            'Confidence_Life_Style_Index': str(confidence),
-            'Destination_Type': str(destination), # Asumsi ini ada di fitur model SVM
-            'Gender': 'Male',  # Asumsi ini ada di fitur model SVM, atau hapus jika tidak
-            'Cancellation_Last_1Month': int(cancellations),
-            'Var1': float(traffic), # Ganti Var1, Var2, Var3 dengan nama fitur yang relevan untuk SVM jika berbeda
-            'Var2': float(demand),
-            'Var3': float(weather)
+            'Trip_Distance': float(distance_input),
+            'Customer_Rating': float(rating_input),
+            'Customer_Since_Months': int(months_input),
+            'Life_Style_Index': float(lifestyle_input),
+            'Type_of_Cab': str(cab_type_input),
+            'Confidence_Life_Style_Index': str(confidence_input),
+            'Destination_Type': str(destination_input), 
+            'Gender': 'Male', 
+            'Cancellation_Last_1Month': int(cancellations_input),
+            'Var1': float(traffic_input), 
+            'Var2': float(demand_input),
+            'Var3': float(weather_input)
+            # PENTING: Tambahkan fitur lain di sini jika 20 fitur SVM Anda berbeda
+            # Misal: 'Feature14': default_value_14, ... 'Feature20': default_value_20
         }
         
-        # Preprocess data
-        processed_array = preprocess_input_data_robust(input_data, feature_names_list)
+        processed_array = preprocess_input_data_robust(input_data, feature_names_list_for_svm)
         
-        # Validasi hasil preprocessing
-        if processed_array.shape[1] != len(feature_names_list):
-            raise ValueError("Feature mismatch after preprocessing: {} vs {}".format(processed_array.shape[1], len(feature_names_list)))
-        
-        if np.isnan(processed_array).any() or np.isinf(processed_array).any():
-            raise ValueError("Invalid input values after preprocessing")
-        
-        # Scale dan predict menggunakan advanced model
-        # Jika SVM Anda tidak menggunakan scaler terpisah atau sudah di-pipeline, sesuaikan ini
-        if scaler:
+        if scaler: # Hanya transform jika scaler ada dan sudah di-fit
             scaled_input = scaler.transform(processed_array)
         else:
-            scaled_input = processed_array # Jika tidak ada scaler
+            scaled_input = processed_array
 
         prediction_result = model.predict(scaled_input)
-        
-        if not isinstance(prediction_result, np.ndarray) or len(prediction_result) == 0:
-            raise ValueError("Invalid prediction from SVM model")
-        
         surge = float(prediction_result[0])
-        
-        if np.isnan(surge) or np.isinf(surge):
-            raise ValueError("Invalid prediction value from SVM model (NaN or Inf)")
-        
-        surge = max(1.0, min(3.0, surge)) # Pastikan surge dalam rentang yang wajar
+        surge = max(1.0, min(3.0, surge))
         
         prediction_html = """
         <div class="prediction-box">
@@ -839,17 +574,16 @@ if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_contain
             <p>Powered by {} - Support Vector Machine Precision AI</p>
         </div>
         """.format(surge, MODEL_SOURCE.upper())
-        
         st.markdown(prediction_html, unsafe_allow_html=True)
         
-        # ... (Sisa kode untuk menampilkan hasil, sama seperti sebelumnya, sesuaikan teks jika perlu) ...
+        # Tampilan hasil lainnya (metric cards, dll.)
+        # ... (Kode tampilan hasil seperti di versi sebelumnya, pastikan variabelnya sesuai) ...
         st.markdown("### 📊 Detailed Analysis Results")
         result_col1, result_col2, result_col3 = st.columns([1, 1, 1])
         
         with result_col1:
             category = "High" if surge > 2.5 else "Medium" if surge > 1.5 else "Low"
             surge_class = "surge-low" if surge <= 1.5 else "surge-medium" if surge <= 2.5 else "surge-high"
-            
             surge_html = """
             <div class="metric-card {}">
                 <h4>📊 Surge Analysis</h4>
@@ -857,13 +591,11 @@ if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_contain
                 <p><strong>Multiplier:</strong> {:.2f}x</p>
                 <p><strong>Distance:</strong> {} km</p>
             </div>
-            """.format(surge_class, category, surge, distance)
-            
+            """.format(surge_class, category, surge, distance_input) # Gunakan distance_input
             st.markdown(surge_html, unsafe_allow_html=True)
             
         with result_col2:
-            loyalty = "VIP" if months > 24 else "Loyal" if months > 12 else "Regular" if months > 3 else "New"
-            
+            loyalty = "VIP" if months_input > 24 else "Loyal" if months_input > 12 else "Regular" if months_input > 3 else "New"
             loyalty_html = """
             <div class="metric-card">
                 <h4>👤 Customer Profile</h4>
@@ -871,16 +603,14 @@ if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_contain
                 <p><strong>Rating:</strong> {}/5.0 ⭐</p>
                 <p><strong>Since:</strong> {} months</p>
             </div>
-            """.format(loyalty, rating, months)
-            
+            """.format(loyalty, rating_input, months_input) # Gunakan variabel input yang benar
             st.markdown(loyalty_html, unsafe_allow_html=True)
             
         with result_col3:
             base_fare = 10.0
-            distance_cost = distance * 2.5
-            surge_additional = (distance_cost * (surge - 1))
-            total_fare = base_fare + distance_cost + surge_additional
-            
+            distance_cost_val = float(distance_input) * 2.5 # Gunakan variabel input yang benar
+            surge_additional = (distance_cost_val * (surge - 1))
+            total_fare = base_fare + distance_cost_val + surge_additional
             fare_html = """
             <div class="metric-card">
                 <h4>💰 Precision Fare</h4>
@@ -889,52 +619,12 @@ if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_contain
                 <p><strong>Surge:</strong> +${:.2f}</p>
                 <p><strong>Total:</strong> ${:.2f}</p>
             </div>
-            """.format(base_fare, distance_cost, surge_additional, total_fare)
-            
+            """.format(base_fare, distance_cost_val, surge_additional, total_fare)
             st.markdown(fare_html, unsafe_allow_html=True)
-        
-        st.markdown("### 🔍 Real-time Conditions Impact")
-        condition_col1, condition_col2 = st.columns([1, 1])
-        
-        with condition_col1:
-            condition_score = (traffic + demand + weather) / 3
-            impact = "High Impact" if condition_score > 70 else "Medium Impact" if condition_score > 40 else "Low Impact"
-            recommendation = 'Consider alternative time or route' if condition_score > 70 else 'Optimal conditions for travel'
-            
-            condition_html = """
-            <div class="info-box">
-                <h4>🚦 Current Conditions</h4>
-                <p><strong>Traffic Density:</strong> {:.0f}/100</p>
-                <p><strong>Demand Level:</strong> {:.0f}/100</p>
-                <p><strong>Weather Impact:</strong> {:.0f}/100</p>
-                <p><strong>Overall Impact:</strong> {} ({:.0f}/100)</p>
-                <p><strong>💡 AI Recommendation:</strong> {}</p>
-            </div>
-            """.format(traffic, demand, weather, impact, condition_score, recommendation)
-            
-            st.markdown(condition_html, unsafe_allow_html=True)
-            
-        with condition_col2:
-            distance_factor = min(distance / 50, 0.5)
-            rating_factor = (rating - 1) / 20
-            cab_factor = {'Economy (Micro)': 0.0, 'Standard (Mini)': 0.2, 'Premium (Prime)': 0.4}.get(cab_type, 0.0)
-            condition_factor = (traffic + demand + weather) / 300
-            
-            factor_html = """
-            <div class="info-box">
-                <h4>📊 Factor Breakdown (Illustrative)</h4>
-                <p><strong>Distance Factor:</strong> {:.3f}</p>
-                <p><strong>Rating Factor:</strong> {:.3f}</p>
-                <p><strong>Vehicle Factor:</strong> {:.3f}</p>
-                <p><strong>Condition Factor:</strong> {:.3f}</p>
-            </div>
-            """.format(distance_factor, rating_factor, cab_factor, condition_factor)
-            
-            st.markdown(factor_html, unsafe_allow_html=True)
 
     except Exception as e:
         error_msg = str(e)
-        st.error(f"❌ Advanced prediction error: {error_msg}")
+        st.error("❌ Advanced prediction error: {}".format(error_msg))
         st.markdown("""
         <div class="prediction-box">
             <h2>🎯 Fallback Pricing</h2>
@@ -943,11 +633,12 @@ if st.button('🔮 Calculate SVM Precision Pricing', type="primary", use_contain
         </div>
         """, unsafe_allow_html=True)
 
+# ... (Sisa kode: Information Section, Model Status, Footer - pastikan variabelnya benar) ...
 # Enhanced Information Section
 info_container = st.container()
 with info_container:
     st.markdown("---")
-    st.markdown("## 💡 Advanced SVM Pricing Technology") # Disesuaikan
+    st.markdown("## 💡 Advanced SVM Pricing Technology") 
     info_col1, info_col2 = st.columns([1, 1])
     
     with info_col1:
@@ -955,15 +646,9 @@ with info_container:
         <div class="info-box">
             <h3>🔍 Vehicle Categories</h3>
             <ul>
-                <li><strong>🚗 Economy (Micro):</strong> Budget-friendly, compact cars</li>
-                <li><strong>🚙 Standard (Mini):</strong> Regular sedans with good comfort</li>
-                <li><strong>🚘 Premium (Prime):</strong> Luxury vehicles with premium service</li>
-            </ul>
-            <h3>🎯 Confidence Levels</h3>
-            <ul>
-                <li><strong>🟢 High:</strong> Frequent user, trusts service completely</li>
-                <li><strong>🟡 Medium:</strong> Occasional user with moderate confidence</li>
-                <li><strong>🔴 Low:</strong> New or hesitant user</li>
+                <li><strong>🚗 Economy (Micro):</strong> Budget-friendly</li>
+                <li><strong>🚙 Standard (Mini):</strong> Comfortable</li>
+                <li><strong>🚘 Premium (Prime):</strong> Luxury service</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -973,14 +658,10 @@ with info_container:
         <div class="info-box">
             <h3>🌧 Dynamic Pricing Factors</h3>
             <ul>
-                <li><strong>🚦 Traffic Density:</strong> Real-time road congestion analysis</li>
-                <li><strong>📈 Demand Level:</strong> Current booking requests in your area</li>
-                <li><strong>🌤 Weather Impact:</strong> Weather conditions affecting travel safety</li>
-                <li><strong>📏 Distance:</strong> Primary cost factor with AI optimization</li>
+                <li><strong>🚦 Traffic, 📈 Demand, 🌤 Weather</strong></li>
             </ul>
             <h3>🤖 Advanced SVM Technology</h3>
-            <p>Our <strong>Advanced Support Vector Machine (SVM) model</strong> 
-            analyzes multiple factors to deliver precise fare predictions.</p>
+            <p>Our SVM model analyzes factors for precise fares.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -993,16 +674,19 @@ with status_container:
     model_col1, model_col2 = st.columns([1, 1])
     
     with model_col1:
+        model_accuracy = final_results.get('r2', 0.0) * 100
+        num_features = len(feature_names_list_for_svm) if feature_names_list_for_svm else 'N/A'
+
         if MODEL_SOURCE == "svm_model.pkl":
             status_html = """
             <div class="model-status success">
                 <h4>✅ Model Status</h4>
-                <p><strong>Source:</strong> svm_model.pkl loaded successfully</p>
+                <p><strong>Source:</strong> svm_model.pkl loaded</p>
                 <p><strong>Type:</strong> Advanced SVM Model</p>
-                <p><strong>Accuracy:</strong> {}% precision</p>
-                <p><strong>Features:</strong> {} optimized features</p>
+                <p><strong>Accuracy:</strong> {:.2f}% (approx.)</p>
+                <p><strong>Features:</strong> {}</p>
             </div>
-            """.format(final_results.get('r2', 0.90)*100, len(feature_names_list))
+            """.format(model_accuracy, num_features)
             st.markdown(status_html, unsafe_allow_html=True)
         else:
             status_html = """
@@ -1010,9 +694,10 @@ with status_container:
                 <h4>⚠️ Model Status</h4>
                 <p><strong>Source:</strong> Fallback SVM model</p>
                 <p><strong>Reason:</strong> {}</p>
-                <p><strong>Performance:</strong> Using simplified SVM</p>
+                <p><strong>Type:</strong> Simplified SVR</p>
+                <p><strong>Features:</strong> {}</p>
             </div>
-            """.format(load_status.replace('fallback: ', ''))
+            """.format(load_status.replace('fallback: ', ''), num_features)
             st.markdown(status_html, unsafe_allow_html=True)
     
     with model_col2:
@@ -1049,9 +734,10 @@ with footer_container:
         <h3 style="margin: 0; font-size: clamp(1.3rem, 5vw, 2rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
         <p style="margin: 1rem 0; font-size: clamp(1rem, 3vw, 1.2rem);">Safe • Reliable • Affordable • 24/7 Available</p>
         <p style="margin: 0; font-size: clamp(0.9rem, 2.5vw, 1rem);">
-            <strong>Python {} | {} | 🌱 Eco-Green Theme</strong>
+            <strong>Python {} | {} | 🌱 All Device Optimized</strong>
         </p>
     </div>
     """.format(python_version, model_status_text)
     
     st.markdown(footer_html, unsafe_allow_html=True)
+

@@ -541,7 +541,7 @@ with about_container:
         <div class="info-box">
             <h3><span class="icon">🌟</span>About Sigma Cabs</h3>
             <p><strong>Sigma Cabs</strong> provides exceptional cab service in 
-            <strong>Hyderabad</strong> and <strong>Bangalore</strong>. Our AI-powered 
+            <strong>Hyderabad</strong> and <strong>Bangalore</strong>. Our ML-powered 
             pricing system ensures fair and transparent fares based on real-time conditions.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -861,7 +861,7 @@ with info_container:
                 <li><strong>🌤️ Weather Impact:</strong> Weather conditions affecting travel safety</li>
                 <li><strong>📏 Distance:</strong> Primary cost factor for your journey</li>
             </ul>
-            <h3><span class="icon">🤖</span>How Our AI Works</h3>
+            <h3><span class="icon">🤖</span>How Our Machine Leraning Works</h3>
             <p>Our advanced machine learning model analyzes <strong>13+ factors</strong> in real-time to predict fair and transparent surge pricing, ensuring you get the best possible fare.</p>
         </div>
         """, unsafe_allow_html=True)

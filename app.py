@@ -21,6 +21,7 @@ python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
 # Try import ML libraries dengan error handling
 ML_AVAILABLE = False
+MODEL_SOURCE = "fallback"
 try:
     import joblib
     import pickle
@@ -53,7 +54,7 @@ st.markdown("""
         --dark-green: #1b5e20;
     }
     
-    /* Dark mode variables - Tetap biru laut untuk kontras */
+    /* Dark mode variables */
     @media (prefers-color-scheme: dark) {
         :root {
             --primary-color: #FF6B6B;
@@ -365,6 +366,30 @@ st.markdown("""
         border-radius: 8px;
     }
     
+    /* Enhanced model status styling */
+    .model-status {
+        background: var(--card-background);
+        backdrop-filter: blur(20px);
+        padding: 1.2rem;
+        border-radius: 12px;
+        margin: 0.8rem 0;
+        border: 2px solid var(--border-color);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .model-status.success {
+        border-left: 6px solid var(--success-color);
+    }
+    
+    .model-status.warning {
+        border-left: 6px solid var(--warning-color);
+    }
+    
+    .model-status.info {
+        border-left: 6px solid var(--info-color);
+    }
+    
     /* Enhanced Streamlit widget styling */
     .stSelectbox > div > div {
         background: var(--card-background) !important;
@@ -635,16 +660,19 @@ def create_valid_model():
         'r2': 0.9455,
         'mae': 0.0545,
         'rmse': 0.0738,
-        'model_type': 'GradientBoostingRegressor (Advanced)'
+        'model_type': 'GradientBoostingRegressor (Advanced Built-in)'
     }
     
     return model, scaler, feature_names, final_results
 
 # Fungsi untuk load model dengan validasi yang ketat - SESUAI PERMINTAAN
 @st.cache_resource
-def load_model() -> Tuple[Any, StandardScaler, List[str], Dict]:
-    """Load model dengan validasi yang ketat"""
+def load_model() -> Tuple[Any, StandardScaler, List[str], Dict, str]:
+    """Load model dengan validasi yang ketat dan return status"""
+    global MODEL_SOURCE
+    
     try:
+        # Coba load model.pkl dan scaler.pkl
         model = joblib.load('model.pkl')
         scaler = joblib.load('scaler.pkl')
         
@@ -659,29 +687,46 @@ def load_model() -> Tuple[Any, StandardScaler, List[str], Dict]:
                 'r2': 0.9455,
                 'mae': 0.0545,
                 'rmse': 0.0738,
-                'model_type': 'GradientBoostingRegressor'
+                'model_type': 'GradientBoostingRegressor (from model.pkl)'
             }
         
-        # Validasi model
+        # Validasi model yang ketat
         if not hasattr(model, 'predict') or not hasattr(scaler, 'transform'):
-            raise ValueError("Invalid model or scaler")
+            raise ValueError("Invalid model or scaler - missing required methods")
         
-        # Test prediction
+        # Test prediction dengan validasi yang lebih ketat
         test_input = np.random.randn(1, len(feature_names))
-        scaled_test = scaler.transform(test_input)
-        test_pred = model.predict(scaled_test)
+        
+        # Test scaler
+        try:
+            scaled_test = scaler.transform(test_input)
+        except Exception as e:
+            raise ValueError(f"Scaler transform failed: {str(e)}")
+        
+        # Test model prediction
+        try:
+            test_pred = model.predict(scaled_test)
+        except Exception as e:
+            raise ValueError(f"Model prediction failed: {str(e)}")
         
         if not isinstance(test_pred, np.ndarray):
-            raise ValueError("Invalid prediction output")
+            raise ValueError("Invalid prediction output - not numpy array")
         
-        st.success("✅ Advanced Gradient Boosting Model loaded successfully from model.pkl")
-        return model, scaler, feature_names, final_results
+        if len(test_pred) == 0:
+            raise ValueError("Invalid prediction output - empty array")
+        
+        if np.isnan(test_pred).any() or np.isinf(test_pred).any():
+            raise ValueError("Invalid prediction output - contains NaN or Inf")
+        
+        MODEL_SOURCE = "model.pkl"
+        return model, scaler, feature_names, final_results, "success"
         
     except Exception as e:
-        st.warning(f"⚠️ Model.pkl load failed: {str(e)}. Using advanced built-in Gradient Boosting model.")
+        # Jika gagal load model.pkl, gunakan advanced built-in model
+        error_msg = str(e)
         model, scaler, feature_names, final_results = create_valid_model()
-        st.info("ℹ️ Using advanced built-in Gradient Boosting model with optimized hyperparameters")
-        return model, scaler, feature_names, final_results
+        MODEL_SOURCE = "built-in"
+        return model, scaler, feature_names, final_results, f"fallback: {error_msg}"
 
 # Enhanced preprocessing function
 def preprocess_input_data_robust(input_dict, feature_names):
@@ -779,7 +824,7 @@ display_header()
 st.markdown('<h1 class="main-header">🌱 Advanced Eco-Smart Taxi Pricing Analysis 🌊</h1>', unsafe_allow_html=True)
 
 # Load model dengan advanced validation
-model, scaler, feature_names, final_results = load_model()
+model, scaler, feature_names, final_results, load_status = load_model()
 
 # About dan Contact
 col1, col2 = st.columns([2, 1])
@@ -933,7 +978,7 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
         <div class="prediction-box">
             <h2>🎯 Advanced Gradient Boosting Prediction</h2>
             <h1>{surge:.2f}x</h1>
-            <p>Powered by Advanced Model - Maximum Precision AI</p>
+            <p>Powered by {MODEL_SOURCE.upper()} - Maximum Precision AI</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1114,24 +1159,56 @@ with info_container:
         </div>
         """, unsafe_allow_html=True)
 
-# Enhanced System Status
+# PINDAHKAN MODEL STATUS KE SINI - DI ATAS FOOTER
 status_container = st.container()
 with status_container:
     st.markdown("---")
     st.markdown("## ⚙️ Advanced System Performance")
-    status_col1, status_col2 = st.columns([1, 1])
     
-    with status_col1:
+    # Model Status yang dipindah ke bawah
+    model_col1, model_col2 = st.columns([1, 1])
+    
+    with model_col1:
+        if MODEL_SOURCE == "model.pkl":
+            st.markdown("""
+            <div class="model-status success">
+                <h4><span class="icon">✅</span>Model Status</h4>
+                <p><strong>Source:</strong> model.pkl & scaler.pkl loaded successfully</p>
+                <p><strong>Type:</strong> Advanced Gradient Boosting Model</p>
+                <p><strong>Accuracy:</strong> 94.55% precision</p>
+                <p><strong>Features:</strong> 13 optimized features</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="model-status warning">
+                <h4><span class="icon">⚠️</span>Model Status</h4>
+                <p><strong>Source:</strong> Advanced built-in Gradient Boosting model</p>
+                <p><strong>Reason:</strong> {load_status.replace('fallback: ', '')}</p>
+                <p><strong>Performance:</strong> Optimized hyperparameters</p>
+                <p><strong>Features:</strong> 13 engineered features</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with model_col2:
         if python_version >= "3.12":
-            st.warning(f"⚠️ Python {python_version} - Using compatibility mode")
+            st.markdown("""
+            <div class="model-status warning">
+                <h4><span class="icon">⚠️</span>Python Environment</h4>
+                <p><strong>Version:</strong> Python """ + python_version + """</p>
+                <p><strong>Status:</strong> Using compatibility mode</p>
+                <p><strong>Performance:</strong> May have limitations</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.success(f"✅ Deployed with Python {python_version} - Maximum Performance")
-    
-    with status_col2:
-        if ML_AVAILABLE:
-            st.success("✅ Advanced Gradient Boosting Model - 94.55% Precision")
-        else:
-            st.info("ℹ️ Using fallback Gradient Boosting algorithm")
+            st.markdown(f"""
+            <div class="model-status success">
+                <h4><span class="icon">✅</span>Python Environment</h4>
+                <p><strong>Version:</strong> Python {python_version}</p>
+                <p><strong>Status:</strong> Optimal performance</p>
+                <p><strong>ML Libraries:</strong> {'Available' if ML_AVAILABLE else 'Limited'}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # Enhanced Footer
 footer_container = st.container()
@@ -1143,7 +1220,7 @@ with footer_container:
         <h3 style="margin: 0; font-size: clamp(1.3rem, 5vw, 2rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
         <p style="margin: 1rem 0; font-size: clamp(1rem, 3vw, 1.2rem);">Safe • Reliable • Affordable • 24/7 Available</p>
         <p style="margin: 0; font-size: clamp(0.9rem, 2.5vw, 1rem);">
-            <strong>Python {python_version} | {'🤖 Advanced Gradient Boosting Model' if ML_AVAILABLE else '⚡ Fallback Mode'} | 🌱 Eco-Green Theme</strong>
+            <strong>Python {python_version} | {'🤖 Model.pkl Loaded' if MODEL_SOURCE == 'model.pkl' else '⚡ Advanced Built-in Model'} | 🌱 Eco-Green Theme</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)

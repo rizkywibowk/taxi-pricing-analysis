@@ -294,3 +294,107 @@ with footer_container:
         </p>
     </div>
     """, unsafe_allow_html=True)
+# Final Footer Section
+footer_container = st.container()
+with footer_container:
+    st.markdown("---")
+    st.markdown(f"""
+    <div class="footer-container" style="text-align: center; padding: clamp(1.5rem, 4vw, 2rem); 
+               border-radius: 15px; margin-top: 1.5rem; background: var(--card-background);
+               border: 1px solid var(--border-color);">
+        <h3 style="margin: 0; font-size: clamp(1.3rem, 5vw, 2rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO</h3>
+        <p style="margin: 1rem 0; font-size: clamp(1rem, 3vw, 1.2rem);">Safe • Reliable • Affordable • 24/7 Available</p>
+        <p style="margin: 0; font-size: clamp(0.9rem, 2.5vw, 1rem);">
+            <strong>Python {python_version} | {'🤖 ML Enhanced' if ML_AVAILABLE else '⚡ Simplified Mode'} | 📱 Mobile Optimized</strong>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Display Dataset Overview
+st.markdown("### 📊 Dataset Overview")
+st.write("The dataset is used to predict surge pricing based on various factors such as distance, rating, and conditions. Here is a snapshot of the dataset:")
+
+# Show the first few records of the dataset
+if df is not None:
+    st.dataframe(df.head(), use_container_width=True)
+
+# Display Description of the Dataset
+st.markdown("""
+The dataset consists of the following key features:
+
+- **Trip_Distance**: The distance of the trip in kilometers.
+- **Customer_Rating**: The rating given by the customer for the trip (1-5 scale).
+- **Surge_Pricing_Type**: The type of surge pricing applied (based on demand, traffic, and weather).
+- **Cab_Type**: Type of vehicle chosen (Economy, Standard, Premium).
+- **Traffic**, **Demand**, **Weather**: These are external factors that impact surge pricing in real-time.
+""")
+
+# Allow the user to input a new trip for surge prediction
+st.markdown("### 🛣️ Trip Input")
+
+trip_col1, trip_col2 = st.columns([1, 1])
+
+with trip_col1:
+    distance_input = st.number_input("Enter Trip Distance (km):", min_value=0.1, value=5.0, step=0.1)
+    cab_type_input = st.selectbox("Select Cab Type:", ['Economy (Micro)', 'Standard (Mini)', 'Premium (Prime)'])
+    rating_input = st.slider("Rate Your Trip (1-5):", min_value=1, max_value=5, value=4)
+
+with trip_col2:
+    traffic_input = st.slider("Traffic Density (0 = No Traffic, 100 = Heavy Traffic):", min_value=0, max_value=100, value=50)
+    demand_input = st.slider("Demand Level (0 = Low, 100 = High):", min_value=0, max_value=100, value=50)
+    weather_input = st.slider("Weather Impact (0 = Perfect, 100 = Severe):", min_value=0, max_value=100, value=30)
+
+# Prepare the input for prediction
+user_input = {
+    "Trip_Distance": distance_input,
+    "Customer_Rating": rating_input,
+    "Cab_Type": cab_type_input,
+    "Traffic": traffic_input,
+    "Demand": demand_input,
+    "Weather": weather_input
+}
+
+# Predict the Surge Pricing
+if st.button("Predict Surge Pricing"):
+    # Preprocess user input
+    input_data = pd.DataFrame([user_input])
+    input_data_processed = preprocess_data(input_data)
+
+    # Make the prediction using SVM model
+    surge_prediction = svm_model.predict(input_data_processed)
+    st.markdown(f"**Predicted Surge Pricing Multiplier:** {surge_prediction[0]:.2f}x")
+
+# Additional Features: Displaying Surge Level
+def get_surge_level(surge_value):
+    if surge_value <= 1.5:
+        return "Low Surge", "#28a745"  # Green
+    elif surge_value <= 2.5:
+        return "Medium Surge", "#ffc107"  # Yellow
+    else:
+        return "High Surge", "#dc3545"  # Red
+
+# Display Surge Level with dynamic color
+surge_level, surge_color = get_surge_level(surge_prediction[0])
+st.markdown(f"### Surge Pricing Category: **{surge_level}**")
+st.markdown(f"<p style='color:{surge_color}; font-size:2rem;'>Surge Multiplier: {surge_prediction[0]:.2f}x</p>", unsafe_allow_html=True)
+
+# Footer: Enhancing User Experience
+st.markdown("""
+---
+## 🚕 **About Sigma Cabs**
+Sigma Cabs offers exceptional cab service in **Hyderabad** and **Bangalore**, with **ML-powered surge pricing** ensuring that the fares are fair and transparent based on real-time conditions.
+
+### **Contact Information:**
+- **📞** Toll-Free: 1800-420-9999
+- **📱** 24/7 Support: 040-63 63 63 63
+
+Enjoy your ride with **Sigma Cabs**, where we combine advanced **AI-powered technology** and **customer satisfaction**.
+""")
+
+# Add the footer with some extra information
+st.markdown("""
+    <footer style="text-align:center; padding: 1.5rem; background-color: #f1f1f1;">
+        <p>🚕 **Sigma Cabs** | Powered by Machine Learning | Transparent and Fair Pricing | Available 24/7 in Hyderabad & Bangalore</p>
+        <p>Made with ❤️ by <strong>Your Name</strong></p>
+    </footer>
+""", unsafe_allow_html=True)

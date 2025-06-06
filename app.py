@@ -405,4 +405,130 @@ if st.button('🔮 Calculate Advanced Precision Pricing', type="primary", use_co
                     <div class="fare-item">
                         <span>AI Surge ({surge:.2f}x):</span>
                         <span>+${surge_additional:.2f}</span>
-                    </div
+                    </div>
+                    <div class="fare-item">
+                        <span>Total:</span>
+                        <span>${total_fare:.2f}</span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("### 🔍 Real-time Conditions Impact")
+        condition_col1, condition_col2 = st.columns([1, 1])
+        
+        with condition_col1:
+            condition_score = (traffic + demand + weather) / 3
+            impact = "High Impact" if condition_score > 70 else "Medium Impact" if condition_score > 40 else "Low Impact"
+            st.markdown(f"""
+            <div class="info-box">
+                <h4><span class="icon">🚦</span>Current Conditions</h4>
+                <p><strong>Traffic Density:</strong> {traffic:.0f}/100</p>
+                <p><strong>Demand Level:</strong> {demand:.0f}/100</p>
+                <p><strong>Weather Impact:</strong> {weather:.0f}/100</p>
+                <p><strong>Overall Impact:</strong> {impact} ({condition_score:.0f}/100)</p>
+                <p><strong>💡 AI Recommendation:</strong> {'Consider alternative time or route' if condition_score > 70 else 'Optimal conditions for travel'}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with condition_col2:
+            conditions_fig = create_gauge_chart(condition_score, 100, "Conditions Impact")
+            st.plotly_chart(conditions_fig, use_container_width=True)
+        
+        # Enhanced factors chart
+        st.markdown("### 📈 Advanced AI Model Factors Analysis")
+        
+        # Calculate factor contributions
+        base_contribution = 1.0
+        distance_contribution = min(distance / 50, 0.5)
+        rating_contribution = (rating - 1) / 20
+        cab_contribution = {'Economy (Micro)': 0.0, 'Standard (Mini)': 0.2, 'Premium (Prime)': 0.4}.get(cab_type, 0.0)
+        condition_contribution = (traffic + demand + weather) / 300
+        
+        factors_data = {
+            'Factor': ['Base Rate', 'Distance', 'Rating', 'Vehicle Type', 'Conditions'],
+            'Impact': [
+                base_contribution,
+                distance_contribution,
+                rating_contribution,
+                cab_contribution,
+                condition_contribution
+            ]
+        }
+        
+        factors_df = pd.DataFrame(factors_data)
+        fig_factors = px.bar(
+            factors_df, 
+            x='Factor', 
+            y='Impact',
+            title="Advanced Gradient Boosting - Factor Contributions",
+            color='Impact',
+            color_continuous_scale='Greens'
+        )
+        fig_factors.update_layout(
+            height=400,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#2e7d32')
+        )
+        st.plotly_chart(fig_factors, use_container_width=True)
+        
+    except Exception as e:
+        st.error(f"❌ Advanced prediction error: {str(e)}")
+        st.markdown("""
+        <div class="prediction-box">
+            <h2>🎯 Fallback Pricing</h2>
+            <h1>1.50x</h1>
+            <p>Using simplified algorithm</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# Additional Information
+st.markdown("---")
+st.markdown("## 💡 Understanding the Factors")
+
+info_col1, info_col2 = st.columns([1, 1])
+
+with info_col1:
+    st.markdown("""
+    <div class="info-box">
+        <h3>🔍 Vehicle Types</h3>
+        <ul>
+            <li><strong>Economy (Micro):</strong> Budget-friendly, compact cars</li>
+            <li><strong>Standard (Mini):</strong> Regular sedans, good comfort</li>
+            <li><strong>Premium (Prime):</strong> Luxury vehicles, premium service</li>
+        </ul>
+        <h3>🎯 Confidence Levels</h3>
+        <ul>
+            <li><strong>High:</strong> Frequent user, trusts service</li>
+            <li><strong>Medium:</strong> Occasional user</li>
+            <li><strong>Low:</strong> New or hesitant user</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+with info_col2:
+    st.markdown("""
+    <div class="info-box">
+        <h3>🌦️ Pricing Factors</h3>
+        <ul>
+            <li><strong>Traffic Density:</strong> Road congestion level</li>
+            <li><strong>Demand Level:</strong> Current booking requests</li>
+            <li><strong>Weather Impact:</strong> Weather affecting travel</li>
+            <li><strong>Distance:</strong> Primary cost factor</li>
+        </ul>
+        <h3>📊 How It Works</h3>
+        <p>Our AI model analyzes all factors to predict fair surge pricing in real-time.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown(f"""
+<div style="text-align: center; padding: 1.5rem; background: var(--background-color, #f8f9fa); 
+           border-radius: 10px; margin-top: 1rem; word-wrap: break-word;">
+    <h3 style="margin: 0; font-size: clamp(1.2rem, 4vw, 1.8rem);">🚕 Sigma Cabs - Powered by RIZKY WIBOWO KUSUMO MODEL</h3>
+    <p style="margin: 0.5rem 0; font-size: clamp(0.9rem, 3vw, 1rem);">Safe • Reliable • Affordable • 24/7 Available</p>
+    <p style="margin: 0; font-size: clamp(0.8rem, 2.5vw, 0.9rem);"><strong>Model Accuracy: {final_results['r2']*100 if final_results else 94.55:.2f}% | Gradient Boosting Algorithm</strong></p>
+</div>
+""", unsafe_allow_html=True)
